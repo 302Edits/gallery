@@ -49,7 +49,7 @@ test('six gallery themes preview, apply and persist with readable contrast', asy
   await page.goto('/');
   const picker = page.getByRole('button', { name: 'Choose site theme' });
   await picker.click();
-  const themes = ['Paper', 'Stone', 'Sage', 'Midnight', 'Carbon', 'Forest'];
+  const themes = ['Paper', 'Stone', 'Sage', 'Midnight', 'Charcoal', 'Forest'];
   for (const name of themes) await expect(page.getByRole('button', { name: new RegExp(`^${name}`) })).toBeVisible();
   for (const name of themes) {
     if (!(await page.getByRole('button', { name: new RegExp(`^${name}`) }).isVisible())) await picker.click();
@@ -66,4 +66,53 @@ test('six gallery themes preview, apply and persist with readable contrast', asy
   expect(await page.evaluate(() => localStorage.getItem('still.appearance'))).toBe('forest');
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'forest');
+});
+
+test('system appearance uses sage and charcoal and keeps the site icon in sync', async ({ page }) => {
+  await page.route('**/api/zonerama', route => route.fulfill({ json: archive([album('1')]) }));
+  await page.emulateMedia({ colorScheme: 'light' });
+  await page.goto('/');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'sage');
+  await expect(page.locator('link[rel="icon"]')).toHaveAttribute('href', '/favicon-light.svg');
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'carbon');
+  await expect(page.locator('.live-site')).toHaveCSS('background-color', 'rgb(36, 36, 36)');
+  await expect(page.locator('link[rel="icon"]')).toHaveAttribute('href', '/favicon-dark.svg');
+  await page.getByRole('button', { name: 'Choose site theme' }).click();
+  await page.getByRole('button', { name: /^Sage/ }).click();
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'sage');
+});
+
+test('reduced motion keeps scrolled collections visible without animations', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.route('**/api/zonerama', route => route.fulfill({ json: archive(Array.from({ length: 18 }, (_, i) => album(String(i)))) }));
+  await page.goto('/');
+  const card = page.locator('.live-card').last();
+  await card.scrollIntoViewIfNeeded();
+  await expect(card).toBeVisible();
+  expect(await page.evaluate(() => document.getAnimations().length)).toBe(0);
+});
+
+test('collection previews preserve the complete cover image', async ({ page }) => {
+  await page.route('**/api/zonerama', route => route.fulfill({ json: archive([album('1')]) }));
+  await page.goto('/');
+  const preview = page.locator('.live-card-image');
+  await expect(preview.locator('img')).toHaveCSS('object-fit', 'contain');
+  const ratio = await preview.evaluate(element => element.getBoundingClientRect().width / element.getBoundingClientRect().height);
+  expect(ratio).toBeCloseTo(2, 1);
+});
+
+test('scroll reveals settle and respond to reduced-motion changes', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.route('**/api/zonerama', route => route.fulfill({ json: archive(Array.from({ length: 18 }, (_, i) => album(String(i)))) }));
+  await page.goto('/');
+  const card = page.locator('.live-card').last();
+  await expect(card).toBeAttached();
+  await card.evaluate(element => element.scrollIntoView({ behavior: 'instant', block: 'center' }));
+  await expect.poll(() => card.evaluate(element => element.getAnimations().length)).toBeGreaterThan(0);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect.poll(() => page.evaluate(() => document.getAnimations().length)).toBe(0);
+  await expect(card).toHaveCSS('opacity', '1');
+  await expect(card).toHaveCSS('transform', 'none');
 });

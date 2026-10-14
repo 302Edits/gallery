@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import Gallery from './components/Gallery';
+import { lazy, Suspense, useEffect, useState } from 'react';
+const Gallery = lazy(() => import('./components/Gallery'));
 import LiveArchive from './components/LiveArchive';
 const studio = new URLSearchParams(window.location.search).has('studio') || new URLSearchParams(window.location.search).has('album');
 import { getSession, subscribeSession } from './utils/api.js';
@@ -12,8 +12,8 @@ function initialAppearance() {
     const saved = localStorage.getItem(appearanceKey);
     if (studio && ['light', 'dark', 'system'].includes(saved)) return saved;
     if (!studio && publicAppearances.includes(saved)) return saved;
-    if (!studio && saved === 'light') return 'paper';
-    if (!studio && saved === 'dark') return 'midnight';
+    if (!studio && saved === 'light') return 'sage';
+    if (!studio && saved === 'dark') return 'carbon';
   } catch { /* Browsing remains available when storage is disabled. */ }
   return 'system';
 }
@@ -25,7 +25,7 @@ export default function App() {
   const [sessionError, setSessionError] = useState('');
   const mode = studio
     ? appearance === 'system' ? (systemDark ? 'dark' : 'light') : appearance
-    : appearance === 'system' ? (systemDark ? 'midnight' : 'paper') : appearance;
+    : appearance === 'system' ? (systemDark ? 'carbon' : 'sage') : appearance;
 
   useEffect(() => {
     const query = window.matchMedia('(prefers-color-scheme: dark)');
@@ -33,6 +33,12 @@ export default function App() {
     query.addEventListener('change', change);
     return () => query.removeEventListener('change', change);
   }, []);
+
+  useEffect(() => {
+    const dark = ['dark', 'midnight', 'carbon', 'forest'].includes(mode);
+    document.querySelector('link[rel="icon"]').href = `${import.meta.env.BASE_URL}${dark ? 'favicon-dark.svg' : 'favicon-light.svg'}`;
+    document.querySelector('meta[name="theme-color"]').content = dark ? '#242424' : '#edf1ec';
+  }, [mode]);
 
   useEffect(() => {
     if (!studio) return;
@@ -52,6 +58,6 @@ export default function App() {
 
   if (!studio) return <LiveArchive mode={mode} onAppearanceChange={changeAppearance} />;
 
-  return <Gallery admin={session.admin} sessionError={sessionError} mode={mode}
-    appearance={appearance} onAppearanceChange={changeAppearance} />;
+  return <Suspense fallback={<div className="loading-state" role="status">Loading studio…</div>}><Gallery admin={session.admin} sessionError={sessionError} mode={mode}
+    appearance={appearance} onAppearanceChange={changeAppearance} /></Suspense>;
 }

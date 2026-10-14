@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ArrowDown, ArrowUp, ArrowUpRight, Camera, Palette, RefreshCw, Search, X } from 'lucide-react';
 import './live-archive.css';
-import LiveAlbum from './LiveAlbum';
+const LiveAlbum = lazy(() => import('./LiveAlbum'));
 import { isStaticSnapshot, siteHome, zoneramaUrl } from '../utils/zonerama-url';
 const source = 'https://eu.zonerama.com/302Edits/2037673';
 const interval = 5 * 60 * 1000;
@@ -10,7 +10,7 @@ const themes = [
   { id: 'stone', name: 'Stone', tone: 'Light', colors: ['#f3f1ec', '#e4e0d8', '#211f1a'] },
   { id: 'sage', name: 'Sage', tone: 'Light', colors: ['#edf1ec', '#dce4dd', '#15231b'] },
   { id: 'midnight', name: 'Midnight', tone: 'Dark', colors: ['#0a0d14', '#171e2b', '#e9edf3'] },
-  { id: 'carbon', name: 'Carbon', tone: 'Dark', colors: ['#0e0e0e', '#1d1d1c', '#f3f1ed'] },
+  { id: 'carbon', name: 'Charcoal', tone: 'Dark', colors: ['#242424', '#303030', '#f3f1ed'] },
   { id: 'forest', name: 'Forest', tone: 'Dark', colors: ['#0c1511', '#18251f', '#edf2ee'] },
 ];
 function Cover({ album, eager = false }) {
@@ -98,36 +98,25 @@ export default function LiveArchive({ mode, onAppearanceChange }) {
     let cleanup = () => {};
     const setup = () => {
       cleanup();
-      if (preference.matches || collectionId) return;
+      if (preference.matches || collectionId || !root || !('IntersectionObserver' in window)) return;
       const animations = new Set();
       const observer = new IntersectionObserver(entries => {
         entries.forEach(({ target, isIntersecting }) => {
           if (!isIntersecting) return;
           revealed.current.add(target);
           const animation = target.animate([
-            { transform: 'translateY(24px)', opacity: .45 },
+            { transform: 'translateY(20px)', opacity: 0 },
             { transform: 'translateY(0)', opacity: 1 },
-          ], { duration: 700, easing: 'cubic-bezier(.22,1,.36,1)', delay: Number(target.dataset.revealDelay || 0) });
+          ], { duration: 600, fill: 'backwards', easing: 'cubic-bezier(.22,1,.36,1)', delay: Number(target.dataset.revealDelay || 0) });
           animations.add(animation);
-          animation.onfinish = () => animations.delete(animation);
+          animation.onfinish = () => { animation.cancel(); animations.delete(animation); };
           observer.unobserve(target);
         });
-      }, { threshold: .08 });
+      }, { threshold: .08, rootMargin: '0px 0px -24px 0px' });
       root.querySelectorAll('.live-card, .live-collection-title, .live-footer-inner').forEach(node => { if (!revealed.current.has(node)) observer.observe(node); });
-      let frame = 0;
-      const paint = () => {
-        frame = 0;
-        root.style.setProperty('--intro-drift', `${Math.min(window.scrollY * .12, 40)}px`);
-      };
-      const scroll = () => { if (!frame) frame = requestAnimationFrame(paint); };
-      window.addEventListener('scroll', scroll, { passive: true });
-      paint();
       cleanup = () => {
         observer.disconnect();
         animations.forEach(animation => animation.cancel());
-        window.removeEventListener('scroll', scroll);
-        cancelAnimationFrame(frame);
-        root.style.removeProperty('--intro-drift');
       };
     };
     setup();
@@ -144,7 +133,7 @@ export default function LiveArchive({ mode, onAppearanceChange }) {
         <a className="live-source-link" href={source} target="_blank" rel="noopener noreferrer">Source</a>
         <div className="live-theme-wrap" ref={themePicker}><button className="live-theme" aria-label="Choose site theme" aria-expanded={themeOpen} onClick={() => setThemeOpen(value => !value)}><Palette size={19} /><span>Theme</span></button>{themeOpen && <div className="live-theme-panel" aria-label="Site themes"><p>Choose a theme</p><div>{themes.map(theme => <button key={theme.id} className={mode === theme.id ? 'is-active' : ''} aria-pressed={mode === theme.id} onClick={() => { onAppearanceChange(theme.id); setThemeOpen(false); }}><span className="live-theme-swatch" aria-hidden="true" style={{ '--swatch-bg': theme.colors[0], '--swatch-surface': theme.colors[1], '--swatch-ink': theme.colors[2] }}><i /><i /><i /></span><span><strong>{theme.name}</strong><small>{theme.tone}</small></span></button>)}</div></div>}</div></nav>
     </header>
-    {collectionId ? <LiveAlbum key={collectionId} id={collectionId} onBack={() => navigateCollection()} /> : <main>
+    {collectionId ? <Suspense fallback={<main className="loading-state" role="status">Loading collection…</main>}><LiveAlbum key={collectionId} id={collectionId} onBack={() => navigateCollection()} /></Suspense> : <main>
       <section className="live-intro live-width">
         <h1>302 Edits</h1>
         <div className="live-intro-note"><p>Sports photographs, updated live.</p><a className="live-primary" href="#collections">Browse collections <ArrowDown size={18} /></a></div>
@@ -157,7 +146,7 @@ export default function LiveArchive({ mode, onAppearanceChange }) {
         </div>
         {error && <div className="live-error" role="alert"><p>{error} {archive ? 'Your last loaded collections are still available.' : 'You can still visit the complete archive on Zonerama.'}</p><a href={source} target="_blank" rel="noopener noreferrer">Open Zonerama <ArrowUpRight size={18} /></a></div>}
         {(query || category !== 'All') && <div className="live-result-count">{filtered.length} collections found<button onClick={() => { setQuery(''); setCategory('All'); setLimit(18); }}>Clear filters <X size={18} /></button></div>}
-        {!archive && busy ? <div className="live-grid" aria-label="Loading collections" aria-busy="true">{[1, 2, 3, 4, 5, 6].map(i => <div className="live-skeleton" key={i} />)}</div> : <div className="live-grid">{filtered.slice(0, limit).map((album, index) => <article key={album.id} className="live-card" data-reveal-delay={Math.min(index % 4, 3) * 65}><a href={`?collection=${album.id}`} onClick={event => openCollection(event, album.id)} aria-label={`View ${album.name}`}><div className="live-card-image"><Cover album={album} eager={index < 4} /></div><h3>{album.name}</h3><div className="live-card-meta"><span>{album.dateLabel || album.category}</span><span>{album.photoCount} photos</span></div></a></article>)}</div>}
+        {!archive && busy ? <div className="live-grid" aria-label="Loading collections" aria-busy="true">{[1, 2, 3, 4, 5, 6].map(i => <div className="live-skeleton" key={i} />)}</div> : <div className="live-grid">{filtered.slice(0, limit).map((album, index) => <article key={album.id} className="live-card" data-reveal-delay={Math.min(index % 4, 3) * 45}><a href={`?collection=${album.id}`} onClick={event => openCollection(event, album.id)} aria-label={`View ${album.name}`}><div className="live-card-image"><Cover album={album} eager={index < 4} /></div><h3>{album.name}</h3><div className="live-card-meta"><span>{album.dateLabel || album.category}</span><span>{album.photoCount} photos</span></div></a></article>)}</div>}
         {archive && !filtered.length && <div className="live-empty"><h3>{albums.length ? 'No moments found.' : 'Your first collection awaits'}</h3><p>{albums.length ? 'Try a different event, date or sport.' : 'Public albums will appear here when they are added to Zonerama.'}</p></div>}
         {filtered.length > limit && <div className="live-more"><span>Showing {Math.min(limit, filtered.length)} of {filtered.length} collections</span><button onClick={() => setLimit(value => value + 18)}>More from the archive <ArrowDown size={18} /></button></div>}
         <div className="live-sync" role="status"><span>{error ? 'Waiting to reconnect' : archive ? (isStaticSnapshot ? 'Synced from Zonerama' : 'Live from Zonerama') : 'Connecting to Zonerama'}{archive && <> · Updated {new Date(archive.updatedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</>}<span className="live-refresh-note"> · {isStaticSnapshot ? 'Published hourly' : 'Refreshes every 5 minutes'}</span></span><button onClick={load} disabled={busy} aria-label="Refresh collections"><RefreshCw size={18} className={busy ? 'live-spinning' : ''} />{busy ? 'Refreshing' : 'Refresh'}</button></div>
