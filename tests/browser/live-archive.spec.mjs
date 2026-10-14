@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-const album = (id, name = 'Soccer 9.15.26') => ({ id, name, category: 'Soccer', date: '2026-09-15', dateLabel: 'Sep 15, 2026', photoCount: 117, cover: '/favicon.svg', url: `https://eu.zonerama.com/302Edits/Album/${id}` });
+const album = (id, name = 'Soccer 9.15.26') => ({ id, name, category: 'Soccer', date: '2026-09-15', dateLabel: 'Sep 15, 2026', photoCount: 117, cover: '/favicon.png', url: `https://eu.zonerama.com/302Edits/Album/${id}` });
 const archive = albums => ({ albums, updatedAt: '2026-10-13T12:00:00Z', stale: false });
 test('live homepage searches, paginates and refreshes without owner APIs', async ({ page }) => {
   let reads = 0;
@@ -68,16 +68,16 @@ test('six gallery themes preview, apply and persist with readable contrast', asy
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'forest');
 });
 
-test('system appearance uses sage and charcoal and keeps the site icon in sync', async ({ page }) => {
+test('system appearance uses sage and charcoal and preserves the supplied logo icon', async ({ page }) => {
   await page.route('**/api/zonerama', route => route.fulfill({ json: archive([album('1')]) }));
   await page.emulateMedia({ colorScheme: 'light' });
   await page.goto('/');
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'sage');
-  await expect(page.locator('link[rel="icon"]')).toHaveAttribute('href', '/favicon-light.svg');
+  await expect(page.locator('link[rel="icon"]')).toHaveAttribute('href', '/favicon.png');
   await page.emulateMedia({ colorScheme: 'dark' });
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'carbon');
   await expect(page.locator('.live-site')).toHaveCSS('background-color', 'rgb(36, 36, 36)');
-  await expect(page.locator('link[rel="icon"]')).toHaveAttribute('href', '/favicon-dark.svg');
+  await expect(page.locator('link[rel="icon"]')).toHaveAttribute('href', '/favicon.png');
   await page.getByRole('button', { name: 'Choose site theme' }).click();
   await page.getByRole('button', { name: /^Sage/ }).click();
   await page.reload();

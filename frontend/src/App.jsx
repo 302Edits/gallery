@@ -36,7 +36,6 @@ export default function App() {
 
   useEffect(() => {
     const dark = ['dark', 'midnight', 'carbon', 'forest'].includes(mode);
-    document.querySelector('link[rel="icon"]').href = `${import.meta.env.BASE_URL}${dark ? 'favicon-dark.svg' : 'favicon-light.svg'}`;
     document.querySelector('meta[name="theme-color"]').content = dark ? '#242424' : '#edf1ec';
   }, [mode]);
 

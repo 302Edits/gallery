@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
-const collection = { id:'123', name:'Field hockey / September', category:'Field hockey', dateLabel:'Sep 15, 2026', photoCount:80, cover:'/favicon.svg', url:'https://eu.zonerama.com/302Edits/Album/123' };
-const photos = Array.from({length:80},(_,i)=>({id:String(100+i),width:i%2 ? 1800:1200,height:i%2 ? 1200:1800,thumbnailUrl:'/favicon.svg',previewUrl:'/favicon.svg'}));
+const collection = { id:'123', name:'Field hockey / September', category:'Field hockey', dateLabel:'Sep 15, 2026', photoCount:80, cover:'/favicon.png', url:'https://eu.zonerama.com/302Edits/Album/123' };
+const photos = Array.from({length:80},(_,i)=>({id:String(100+i),width:i%2 ? 1800:1200,height:i%2 ? 1200:1800,thumbnailUrl:'/favicon.png',previewUrl:'/favicon.png'}));
 async function mock(page, downloadable=true) {
   await page.route('**/api/zonerama', route=>route.fulfill({json:{albums:[collection],updatedAt:new Date().toISOString()}}));
   await page.route('**/api/zonerama/albums/123', route=>route.fulfill({json:{...collection,photos,downloadable,updatedAt:new Date().toISOString()}}));
