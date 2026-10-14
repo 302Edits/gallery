@@ -58,10 +58,11 @@ test('deep link failure can be retried and mobile swipe advances photographs',as
   await expect(page.locator('.collection-viewer-count')).toHaveText('2 / 80');
 });
 
-test('phone controls stay thumb-sized in both themes and the viewer fits portrait and landscape', async ({ page }) => {
+test('phone controls stay thumb-sized in both themes and the viewer fits portrait and landscape', async ({ page }, testInfo) => {
   await mock(page);
   await page.goto('/?collection=123');
   await expect(page.locator('.collection-frame').first()).toBeVisible();
+  if (testInfo.project.name === 'phone') await expect(page.locator('.collection-frame-download').first()).toBeHidden();
   for (const theme of ['light', 'dark']) {
     await page.evaluate(value => { document.documentElement.dataset.theme = value; }, theme);
     for (const width of [320, 390, 600]) {
@@ -73,6 +74,7 @@ test('phone controls stay thumb-sized in both themes and the viewer fits portrai
     }
   }
   await page.getByRole('button', { name: 'Maximize photograph 1', exact: true }).click();
+  await expect(page.locator('.collection-viewer .collection-save')).toBeVisible();
   for (const size of [{ width: 320, height: 568 }, { width: 390, height: 844 }, { width: 844, height: 390 }]) {
     await page.setViewportSize(size);
     await expect.poll(() => page.getByRole('dialog').evaluate(el => Math.round(el.getBoundingClientRect().width))).toBe(size.width);

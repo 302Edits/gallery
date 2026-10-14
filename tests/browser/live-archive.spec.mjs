@@ -43,3 +43,27 @@ test('initial feed failure offers source access and retry; empty results are usa
   await page.getByRole('searchbox').fill('not an event');
   await expect(page.getByRole('heading', { name: 'No moments found.' })).toBeVisible();
 });
+
+test('six gallery themes preview, apply and persist with readable contrast', async ({ page }) => {
+  await page.route('**/api/zonerama', route => route.fulfill({ json: archive([album('1')]) }));
+  await page.goto('/');
+  const picker = page.getByRole('button', { name: 'Choose site theme' });
+  await picker.click();
+  const themes = ['Paper', 'Stone', 'Sage', 'Midnight', 'Carbon', 'Forest'];
+  for (const name of themes) await expect(page.getByRole('button', { name: new RegExp(`^${name}`) })).toBeVisible();
+  for (const name of themes) {
+    if (!(await page.getByRole('button', { name: new RegExp(`^${name}`) }).isVisible())) await picker.click();
+    await page.getByRole('button', { name: new RegExp(`^${name}`) }).click();
+    const contrast = await page.locator('.live-site').evaluate(element => {
+      const rgb = value => value.match(/\d+/g).slice(0, 3).map(Number);
+      const luminance = value => rgb(value).map(channel => channel / 255).map(channel => channel <= .04045 ? channel / 12.92 : ((channel + .055) / 1.055) ** 2.4).reduce((sum, channel, index) => sum + channel * [.2126, .7152, .0722][index], 0);
+      const style = getComputedStyle(element), a = luminance(style.color), b = luminance(style.backgroundColor);
+      return (Math.max(a, b) + .05) / (Math.min(a, b) + .05);
+    });
+    expect(contrast).toBeGreaterThanOrEqual(4.5);
+  }
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'forest');
+  expect(await page.evaluate(() => localStorage.getItem('still.appearance'))).toBe('forest');
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'forest');
+});

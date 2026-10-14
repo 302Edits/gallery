@@ -1,10 +1,18 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ArrowDown, ArrowUp, ArrowUpRight, Camera, RefreshCw, Search, Sun, Moon, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpRight, Camera, Palette, RefreshCw, Search, X } from 'lucide-react';
 import './live-archive.css';
 import LiveAlbum from './LiveAlbum';
 import { isStaticSnapshot, siteHome, zoneramaUrl } from '../utils/zonerama-url';
 const source = 'https://eu.zonerama.com/302Edits/2037673';
 const interval = 5 * 60 * 1000;
+const themes = [
+  { id: 'paper', name: 'Paper', tone: 'Light', colors: ['#f4f5f7', '#e6e9ef', '#101520'] },
+  { id: 'stone', name: 'Stone', tone: 'Light', colors: ['#f3f1ec', '#e4e0d8', '#211f1a'] },
+  { id: 'sage', name: 'Sage', tone: 'Light', colors: ['#edf1ec', '#dce4dd', '#15231b'] },
+  { id: 'midnight', name: 'Midnight', tone: 'Dark', colors: ['#0a0d14', '#171e2b', '#e9edf3'] },
+  { id: 'carbon', name: 'Carbon', tone: 'Dark', colors: ['#0e0e0e', '#1d1d1c', '#f3f1ed'] },
+  { id: 'forest', name: 'Forest', tone: 'Dark', colors: ['#0c1511', '#18251f', '#edf2ee'] },
+];
 function Cover({ album, eager = false }) {
   const [failedUrl, setFailedUrl] = useState('');
   return failedUrl === album.cover ? <span className="live-cover-fallback"><Camera size={32} />Preview unavailable</span> : <img src={album.cover} alt={album.name} loading={eager ? 'eager' : 'lazy'} decoding="async" referrerPolicy="no-referrer" onError={() => setFailedUrl(album.cover)} />;
@@ -14,6 +22,8 @@ export default function LiveArchive({ mode, onAppearanceChange }) {
   const archiveScroll = useRef(0);
   const site = useRef(null);
   const revealed = useRef(new WeakSet());
+  const themePicker = useRef(null);
+  const [themeOpen, setThemeOpen] = useState(false);
   function navigateCollection(id = '') {
     if (!collectionId) archiveScroll.current = window.scrollY;
     const url = new URL(window.location.href);
@@ -64,6 +74,17 @@ export default function LiveArchive({ mode, onAppearanceChange }) {
     return () => { clearTimeout(initial); clearInterval(timer); document.removeEventListener('visibilitychange', visible); const active = request.current; request.current = null; active?.abort(); };
   }, [load]);
   useEffect(() => { document.documentElement.dataset.theme = mode; }, [mode]);
+  useEffect(() => {
+    if (!themeOpen) return;
+    const close = event => {
+      if (event.type === 'keydown' && event.key !== 'Escape') return;
+      if (event.type === 'pointerdown' && themePicker.current?.contains(event.target)) return;
+      setThemeOpen(false);
+    };
+    document.addEventListener('pointerdown', close);
+    document.addEventListener('keydown', close);
+    return () => { document.removeEventListener('pointerdown', close); document.removeEventListener('keydown', close); };
+  }, [themeOpen]);
   const albums = archive?.albums || [];
   const categories = ['All', ...new Set(albums.map(album => album.category))];
   const filtered = useMemo(() => {
@@ -121,7 +142,7 @@ export default function LiveArchive({ mode, onAppearanceChange }) {
       <a className="live-brand" href={siteHome()} onClick={event => openCollection(event, '')} aria-label="302 Edits home">302 Edits</a>
       <nav aria-label="Main navigation"><a href={collectionId ? `${siteHome()}#collections` : "#collections"} onClick={event => { if (collectionId) openCollection(event, ''); }}>Collections</a>
         <a className="live-source-link" href={source} target="_blank" rel="noopener noreferrer">Source</a>
-        <button className="live-theme" aria-label={`Switch to ${mode === 'dark' ? 'light' : 'dark'} appearance`} onClick={() => onAppearanceChange(mode === 'dark' ? 'light' : 'dark')}>{mode === 'dark' ? <Sun size={20} /> : <Moon size={20} />}</button></nav>
+        <div className="live-theme-wrap" ref={themePicker}><button className="live-theme" aria-label="Choose site theme" aria-expanded={themeOpen} onClick={() => setThemeOpen(value => !value)}><Palette size={19} /><span>Theme</span></button>{themeOpen && <div className="live-theme-panel" aria-label="Site themes"><p>Choose a theme</p><div>{themes.map(theme => <button key={theme.id} className={mode === theme.id ? 'is-active' : ''} aria-pressed={mode === theme.id} onClick={() => { onAppearanceChange(theme.id); setThemeOpen(false); }}><span className="live-theme-swatch" aria-hidden="true" style={{ '--swatch-bg': theme.colors[0], '--swatch-surface': theme.colors[1], '--swatch-ink': theme.colors[2] }}><i /><i /><i /></span><span><strong>{theme.name}</strong><small>{theme.tone}</small></span></button>)}</div></div>}</div></nav>
     </header>
     {collectionId ? <LiveAlbum key={collectionId} id={collectionId} onBack={() => navigateCollection()} /> : <main>
       <section className="live-intro live-width">

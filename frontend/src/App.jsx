@@ -5,11 +5,15 @@ const studio = new URLSearchParams(window.location.search).has('studio') || new 
 import { getSession, subscribeSession } from './utils/api.js';
 
 const appearanceKey = 'still.appearance';
+const publicAppearances = ['system', 'paper', 'stone', 'sage', 'midnight', 'carbon', 'forest'];
 
 function initialAppearance() {
   try {
     const saved = localStorage.getItem(appearanceKey);
-    if (['light', 'dark', 'system'].includes(saved)) return saved;
+    if (studio && ['light', 'dark', 'system'].includes(saved)) return saved;
+    if (!studio && publicAppearances.includes(saved)) return saved;
+    if (!studio && saved === 'light') return 'paper';
+    if (!studio && saved === 'dark') return 'midnight';
   } catch { /* Browsing remains available when storage is disabled. */ }
   return 'system';
 }
@@ -19,7 +23,9 @@ export default function App() {
   const [systemDark, setSystemDark] = useState(() => window.matchMedia('(prefers-color-scheme: dark)').matches);
   const [session, setSession] = useState({ admin: false });
   const [sessionError, setSessionError] = useState('');
-  const mode = appearance === 'system' ? (systemDark ? 'dark' : 'light') : appearance;
+  const mode = studio
+    ? appearance === 'system' ? (systemDark ? 'dark' : 'light') : appearance
+    : appearance === 'system' ? (systemDark ? 'midnight' : 'paper') : appearance;
 
   useEffect(() => {
     const query = window.matchMedia('(prefers-color-scheme: dark)');
