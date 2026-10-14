@@ -2,7 +2,7 @@ name: Publish gallery
 
 on:
   push:
-    branches: [master]
+    branches: [main]
   schedule:
     - cron: '17 * * * *'
   workflow_dispatch:
