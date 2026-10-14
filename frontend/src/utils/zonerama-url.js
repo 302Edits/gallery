@@ -1,4 +1,5 @@
 const staticSnapshot = import.meta.env.VITE_STATIC_ZONERAMA === 'true';
+export const isStaticSnapshot = staticSnapshot;
 const base = import.meta.env.BASE_URL;
 
 export function zoneramaUrl(path = '') {
