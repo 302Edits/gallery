@@ -28,7 +28,7 @@ jobs:
       - run: npm ci
       # npm/cli#4828 can omit a platform-specific optional dependency when the
       # lockfile was created on macOS. Pin the binding used by Vite on this runner.
-      - run: npm install --no-save --ignore-scripts @rolldown/binding-linux-x64-gnu@1.2.6 --workspace frontend
+      - run: npm install --no-save --ignore-scripts @rolldown/binding-linux-x64-gnu@1.2.6 lightningcss-linux-x64-gnu@1.32.0 --workspace frontend
       - name: Refresh from Zonerama
         run: npm run snapshot:zonerama
       - name: Build GitHub Pages site
