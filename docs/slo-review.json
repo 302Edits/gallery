@@ -1,0 +1,120 @@
+{
+  "reviewed_on": "2026-09-17",
+  "document": "docs/reliability.md",
+  "service": "public-sports-photo-gallery",
+  "owner": "Site owner",
+  "status": "warning_retained_not_clean_pass",
+  "live_slo": false,
+  "evidence": {
+    "production_deployed": false,
+    "metrics_history_available": false,
+    "alerts_deployed": false,
+    "independent_original_copies_verified": false,
+    "restore_drill_completed": false,
+    "note": "Evidence absence applies to this review; no deployment, telemetry, or backup compliance is asserted."
+  },
+  "confirmed_targets": {
+    "request_success_percent": 99,
+    "window_days": 30,
+    "window_type": "rolling",
+    "cached_ttfb_ms": {
+      "p50": 150,
+      "p95": 500,
+      "p99": 750
+    },
+    "full_original_completion_within_ttfb_target": false,
+    "original_rpo": "Zero original loss conditional on independently verified original copies",
+    "published_metadata_rpo": "Latest verified post-publication snapshot",
+    "best_effort_rto_hours": 24
+  },
+  "unconfirmed_proposals": {
+    "draft_metadata_rpo_hours": 24,
+    "measurement_environment_and_timeout_policy": "Must be finalized and validated before activation",
+    "error_budget_actions_and_notification_route": "Recommended, not implemented or separately confirmed"
+  },
+  "tools": [
+    {
+      "name": "slo_designer.py",
+      "exit_code": 0,
+      "arguments": [
+        "--service",
+        "public-sports-photo-gallery",
+        "--sli-type",
+        "request-success-rate",
+        "--target",
+        "99",
+        "--window-days",
+        "30",
+        "--owner",
+        "Site owner",
+        "--user-journey",
+        "Browse published albums and download their unchanged original photos on mobile or desktop",
+        "--sli-numerator",
+        "count(eligible public request attempts with a usable successful response)",
+        "--sli-denominator",
+        "count(all eligible public request attempts, including operator errors and timeouts)",
+        "--sli-labels",
+        "surface=public,journey=browse-or-download,traffic=human",
+        "--policy-doc",
+        "docs/reliability.md#error-budget-policy",
+        "--review-cadence",
+        "monthly initially; quarterly after stabilization",
+        "--format",
+        "json"
+      ]
+    },
+    {
+      "name": "error_budget_calculator.py",
+      "exit_code": 0,
+      "arguments": [
+        "--target",
+        "99",
+        "--window-days",
+        "30",
+        "--format",
+        "json"
+      ],
+      "result": {
+        "bad_fraction": 0.01,
+        "time_availability_equivalent_minutes": 432,
+        "time_availability_equivalent_hours": 7.2,
+        "request_budget_is_time_allowance": false,
+        "burn_rate_thresholds": {
+          "fast": 14.4,
+          "sustained": 6,
+          "trend": 1
+        },
+        "alerts_are_deployed": false
+      }
+    },
+    {
+      "name": "slo_review.py",
+      "exit_code": 0,
+      "arguments": [
+        "--slo-doc",
+        "docs/reliability.md",
+        "--format",
+        "json"
+      ],
+      "results": [
+        {
+          "path": "docs/reliability.md",
+          "findings": [
+            [
+              "WARN",
+              "target_too_low",
+              "target 99.0% ≤ 99% — likely wrong SLI; users will notice"
+            ]
+          ]
+        }
+      ]
+    }
+  ],
+  "review_summary": {
+    "fail_count": 0,
+    "warning_count": 1,
+    "finding": "target_too_low",
+    "disposition": "Retain the warning and the explicitly owner-accepted 99% low-cost starting target. This is not evidence of production compliance or a clean review pass.",
+    "next_review": "After the first measured rolling 30-day baseline; also after incidents or hosting changes."
+  }
+}

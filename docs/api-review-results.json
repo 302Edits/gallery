@@ -1,0 +1,968 @@
+{
+  "reviewStatus": "QUALIFIED — not a clean sign-off; scorecard B gate and potential-breaking gate failed",
+  "specVersion": "1.0.0",
+  "baselinePurpose": "Explicit empty comparison baseline only. No existing OpenAPI spec was found; no legacy routes, auth, response shapes or external clients were invented. This comparison cannot prove that replacing the unversioned prototype preserves compatibility.",
+  "baseline": {
+    "openapi": "3.0.3",
+    "info": {
+      "title": "Explicit empty baseline — unpublished prototype has no existing API spec",
+      "version": "0.0.0"
+    },
+    "paths": {}
+  },
+  "reviewedHashes": {
+    "docs/openapi.json": "0eef820fc3337c488f53790a6e56fd60999fa5aa1ea6238dd5dd281460f97956",
+    "docs/app-contract.md": "fe6b78bc5594320694d6ba7bae04349d7dc28ccc5b8d746266a632222f56cae6",
+    "frontend/src/utils/api.js": "6749d00082cd35ad1894cdcc90876e7e316facd2fdbdcfcaa80bb480dcfaa942",
+    "backend/index.js": "636ca6f9371c2f79f5401ae9cc6f767c00c2de9445a16df437f57d8632a3e9e5"
+  },
+  "tools": {
+    "linter": {
+      "command": "python3 <skill>/scripts/api_linter.py docs/openapi.json --format json",
+      "exitCode": 0,
+      "diagnosticPrefix": "",
+      "report": {
+        "summary": {
+          "total_endpoints": 9,
+          "endpoints_with_issues": 3,
+          "total_issues": 3,
+          "errors": 0,
+          "warnings": 0,
+          "info": 3,
+          "score": 99.67
+        },
+        "issues": [
+          {
+            "severity": "info",
+            "category": "responses",
+            "message": "Uncommon status code 413 for POST /api/v1/photos",
+            "path": "/paths//api/v1/photos/post/responses/413",
+            "suggestion": "Consider using standard codes for POST: [200, 201, 400, 409, 422]"
+          },
+          {
+            "severity": "info",
+            "category": "responses",
+            "message": "Uncommon status code 413 for POST /api/v1/metadata-inspections",
+            "path": "/paths//api/v1/metadata-inspections/post/responses/413",
+            "suggestion": "Consider using standard codes for POST: [200, 201, 400, 409, 422]"
+          },
+          {
+            "severity": "info",
+            "category": "responses",
+            "message": "Uncommon status code 503 for POST /api/v1/exports",
+            "path": "/paths//api/v1/exports/post/responses/503",
+            "suggestion": "Consider using standard codes for POST: [200, 201, 400, 409, 422]"
+          }
+        ]
+      },
+      "stdout": "{\n  \"summary\": {\n    \"total_endpoints\": 9,\n    \"endpoints_with_issues\": 3,\n    \"total_issues\": 3,\n    \"errors\": 0,\n    \"warnings\": 0,\n    \"info\": 3,\n    \"score\": 99.67\n  },\n  \"issues\": [\n    {\n      \"severity\": \"info\",\n      \"category\": \"responses\",\n      \"message\": \"Uncommon status code 413 for POST /api/v1/photos\",\n      \"path\": \"/paths//api/v1/photos/post/responses/413\",\n      \"suggestion\": \"Consider using standard codes for POST: [200, 201, 400, 409, 422]\"\n    },\n    {\n      \"severity\": \"info\",\n      \"category\": \"responses\",\n      \"message\": \"Uncommon status code 413 for POST /api/v1/metadata-inspections\",\n      \"path\": \"/paths//api/v1/metadata-inspections/post/responses/413\",\n      \"suggestion\": \"Consider using standard codes for POST: [200, 201, 400, 409, 422]\"\n    },\n    {\n      \"severity\": \"info\",\n      \"category\": \"responses\",\n      \"message\": \"Uncommon status code 503 for POST /api/v1/exports\",\n      \"path\": \"/paths//api/v1/exports/post/responses/503\",\n      \"suggestion\": \"Consider using standard codes for POST: [200, 201, 400, 409, 422]\"\n    }\n  ]\n}\n"
+    },
+    "breakingDetector": {
+      "command": "python3 <skill>/scripts/breaking_change_detector.py <explicit-empty-baseline.json> docs/openapi.json --format json --exit-on-breaking",
+      "baselineLocation": "This document’s baseline property; at execution time docs/api-review-results.json contained that baseline directly. Extract baseline for a rerun; do not pass this composite report as the old spec.",
+      "exitCode": 1,
+      "diagnosticPrefix": "",
+      "report": {
+        "summary": {
+          "total_changes": 25,
+          "breaking_changes": 0,
+          "potentially_breaking_changes": 1,
+          "non_breaking_changes": 2,
+          "enhancements": 22,
+          "critical_severity": 0,
+          "high_severity": 0,
+          "medium_severity": 1,
+          "low_severity": 0,
+          "info_severity": 24
+        },
+        "hasBreakingChanges": true,
+        "changes": [
+          {
+            "changeType": "non_breaking",
+            "severity": "info",
+            "category": "versioning",
+            "path": "/info/version",
+            "message": "API version changed from '0.0.0' to '1.0.0'",
+            "oldValue": "0.0.0",
+            "newValue": "1.0.0",
+            "migrationGuide": "",
+            "impactDescription": "Version change indicates API evolution"
+          },
+          {
+            "changeType": "non_breaking",
+            "severity": "info",
+            "category": "metadata",
+            "path": "/info/title",
+            "message": "API title changed from 'Explicit empty baseline — unpublished prototype has no existing API spec' to 'Sports Photo Gallery — Local Owner API'",
+            "oldValue": "Explicit empty baseline — unpublished prototype has no existing API spec",
+            "newValue": "Sports Photo Gallery — Local Owner API",
+            "migrationGuide": "",
+            "impactDescription": "Title change is cosmetic and doesn't affect functionality"
+          },
+          {
+            "changeType": "enhancement",
+            "severity": "info",
+            "category": "servers",
+            "path": "/servers",
+            "message": "New server URL added: http://127.0.0.1:5000",
+            "oldValue": null,
+            "newValue": "http://127.0.0.1:5000",
+            "migrationGuide": "",
+            "impactDescription": "New server option provides additional deployment flexibility"
+          },
+          {
+            "changeType": "enhancement",
+            "severity": "info",
+            "category": "endpoints",
+            "path": "/paths/api/v1/session",
+            "message": "New endpoint added: GET /api/v1/session",
+            "oldValue": null,
+            "newValue": "GET /api/v1/session",
+            "migrationGuide": "",
+            "impactDescription": "New functionality available to clients"
+          },
+          {
+            "changeType": "enhancement",
+            "severity": "info",
+            "category": "endpoints",
+            "path": "/paths/api/v1/galleries",
+            "message": "New endpoint added: GET /api/v1/galleries",
+            "oldValue": null,
+            "newValue": "GET /api/v1/galleries",
+            "migrationGuide": "",
+            "impactDescription": "New functionality available to clients"
+          },
+          {
+            "changeType": "enhancement",
+            "severity": "info",
+            "category": "endpoints",
+            "path": "/paths/api/v1/galleries",
+            "message": "New endpoint added: POST /api/v1/galleries",
+            "oldValue": null,
+            "newValue": "POST /api/v1/galleries",
+            "migrationGuide": "",
+            "impactDescription": "New functionality available to clients"
+          },
+          {
+            "changeType": "enhancement",
+            "severity": "info",
+            "category": "endpoints",
+            "path": "/paths/api/v1/galleries/{id}/photos",
+            "message": "New endpoint added: GET /api/v1/galleries/{id}/photos",
+            "oldValue": null,
+            "newValue": "GET /api/v1/galleries/{id}/photos",
+            "migrationGuide": "",
+            "impactDescription": "New functionality available to clients"
+          },
+          {
+            "changeType": "enhancement",
+            "severity": "info",
+            "category": "endpoints",
+            "path": "/paths/api/v1/galleries/{id}/publication",
+            "message": "New endpoint added: POST /api/v1/galleries/{id}/publication",
+            "oldValue": null,
+            "newValue": "POST /api/v1/galleries/{id}/publication",
+            "migrationGuide": "",
+            "impactDescription": "New functionality available to clients"
+          },
+          {
+            "changeType": "enhancement",
+            "severity": "info",
+            "category": "endpoints",
+            "path": "/paths/api/v1/photos",
+            "message": "New endpoint added: POST /api/v1/photos",
+            "oldValue": null,
+            "newValue": "POST /api/v1/photos",
+            "migrationGuide": "",
+            "impactDescription": "New functionality available to clients"
+          },
+          {
+            "changeType": "enhancement",
+            "severity": "info",
+            "category": "endpoints",
+            "path": "/paths/api/v1/exports",
+            "message": "New endpoint added: POST /api/v1/exports",
+            "oldValue": null,
+            "newValue": "POST /api/v1/exports",
+            "migrationGuide": "",
+            "impactDescription": "New functionality available to clients"
+          },
+          {
+            "changeType": "enhancement",
+            "severity": "info",
+            "category": "endpoints",
+            "path": "/paths/api/v1/metadata-inspections",
+            "message": "New endpoint added: POST /api/v1/metadata-inspections",
+            "oldValue": null,
+            "newValue": "POST /api/v1/metadata-inspections",
+            "migrationGuide": "",
+            "impactDescription": "New functionality available to clients"
+          },
+          {
+            "changeType": "enhancement",
+            "severity": "info",
+            "category": "endpoints",
+            "path": "/paths/api/v1/galleries/{id}",
+            "message": "New endpoint added: PATCH /api/v1/galleries/{id}",
+            "oldValue": null,
+            "newValue": "PATCH /api/v1/galleries/{id}",
+            "migrationGuide": "",
+            "impactDescription": "New functionality available to clients"
+          },
+          {
+            "changeType": "enhancement",
+            "severity": "info",
+            "category": "components",
+            "path": "/components/schemas/GalleryUpdate",
+            "message": "New schema 'GalleryUpdate' added to components",
+            "oldValue": null,
+            "newValue": {
+              "type": "object",
+              "minProperties": 1,
+              "description": "Partial editable gallery fields. Omitted fields are unchanged. Null clears only explicitly nullable fields. No client-controlled publication time, count or IDs.",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Gallery title; required when creating.",
+                  "minLength": 1
+                },
+                "description": {
+                  "type": "string",
+                  "description": "Optional curated introduction."
+                },
+                "sport": {
+                  "type": "string",
+                  "description": "Owner-provided sport label; no automatic sport inference is claimed."
+                },
+                "location": {
+                  "type": "string",
+                  "description": "Owner-provided venue or location; GPS is not automatically reverse-geocoded."
+                },
+                "eventDate": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "Owner-provided album date. ISO 8601 date or date-time; EXIF has no reliable timezone when none was recorded."
+                },
+                "themePreset": {
+                  "type": "string",
+                  "description": "Preset identifier understood by the frontend; not a provider-side theme setting."
+                },
+                "themeColor": {
+                  "type": "string",
+                  "pattern": "^#[0-9a-fA-F]{6}$",
+                  "description": "Custom six-digit hexadecimal accent color. The frontend must retain legible light/dark contrast."
+                },
+                "coverPhotoId": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "Photo ID belonging to this gallery, or null to use the default cover."
+                }
+              },
+              "example": {
+                "description": "The final whistle.",
+                "themeColor": "#b6c780"
+              }
+            },
+            "migrationGuide": "",
+            "impactDescription": "New reusable schema available"
+          },
+          {
+            "changeType": "enhancement",
+            "severity": "info",
+            "category": "components",
+            "path": "/components/schemas/MetadataInspection",
+            "message": "New schema 'MetadataInspection' added to components",
+            "oldValue": null,
+            "newValue": {
+              "type": "object",
+              "description": "Detected metadata for owner review, not sport/location inference or a complete privacy audit.",
+              "properties": {
+                "dateTaken": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "This file’s own detected/fallback date. ISO 8601 date or date-time; EXIF has no reliable timezone when none was recorded."
+                },
+                "metadataSource": {
+                  "type": "string",
+                  "description": "Date source."
+                },
+                "width": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Oriented width."
+                },
+                "height": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Oriented height."
+                },
+                "hasGps": {
+                  "type": "boolean",
+                  "description": "Detected original GPS metadata presence."
+                },
+                "camera": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "Detected camera description, when available; transient inspection only."
+                }
+              },
+              "example": {
+                "dateTaken": "2026-09-17T18:30:00",
+                "metadataSource": "exif",
+                "width": 6000,
+                "height": 4000,
+                "hasGps": false,
+                "camera": "Example camera"
+              }
+            },
+            "migrationGuide": "",
+            "impactDescription": "New reusable schema available"
+          },
+          {
+            "changeType": "enhancement",
+            "severity": "info",
+            "category": "components",
+            "path": "/components/schemas/PhotoUpload",
+            "message": "New schema 'PhotoUpload' added to components",
+            "oldValue": null,
+            "newValue": {
+              "type": "object",
+              "required": [
+                "photo",
+                "galleryId"
+              ],
+              "description": "One multipart photo per request. Batch upload consists of bounded client requests with per-file progress, retry and cancellation.",
+              "properties": {
+                "photo": {
+                  "type": "string",
+                  "format": "binary",
+                  "description": "Exactly one original image, unmodified; maximum 104,857,600 bytes (100 MiB). Decoder-supported JPEG, PNG, WebP, AVIF, or TIFF; first frame only for multi-frame images."
+                },
+                "galleryId": {
+                  "type": "string",
+                  "description": "Existing destination gallery ID."
+                },
+                "sport": {
+                  "type": "string",
+                  "description": "Optional explicit photo sport; never inferred from pixels."
+                },
+                "location": {
+                  "type": "string",
+                  "description": "Optional explicit photo location."
+                },
+                "date": {
+                  "type": "string",
+                  "description": "Optional explicit date override. The manager resolves an individual override before an explicit batch override; omission preserves this photo’s own EXIF date, then its own lastModified fallback."
+                },
+                "lastModified": {
+                  "type": "string",
+                  "pattern": "^[0-9]+$",
+                  "description": "Optional browser file.lastModified timestamp in milliseconds, serialized as a multipart text field. Only a fallback; not evidence of capture date."
+                }
+              },
+              "example": {
+                "photo": "<binary original image>",
+                "galleryId": "gallery-example",
+                "sport": "Football",
+                "lastModified": "1789687800000"
+              }
+            },
+            "migrationGuide": "",
+            "impactDescription": "New reusable schema available"
+          },
+          {
+            "changeType": "enhancement",
+            "severity": "info",
+            "category": "components",
+            "path": "/components/schemas/PublicationRequest",
+            "message": "New schema 'PublicationRequest' added to components",
+            "oldValue": null,
+            "newValue": {
+              "type": "object",
+              "required": [
+                "acknowledgePublicOriginals"
+              ],
+              "description": "Deliberate acknowledgement before publishing current album photo IDs. Original EXIF (including GPS if present) is unchanged and can be downloaded publicly.",
+              "properties": {
+                "acknowledgePublicOriginals": {
+                  "type": "boolean",
+                  "enum": [
+                    true
+                  ],
+                  "description": "Must explicitly be true; there is no implicit publication on upload."
+                }
+              },
+              "example": {
+                "acknowledgePublicOriginals": true
+              }
+            },
+            "migrationGuide": "",
+            "impactDescription": "New reusable schema available"
+          },
+          {
+            "changeType": "enhancement",
+            "severity": "info",
+            "category": "components",
+            "path": "/components/schemas/Error",
+            "message": "New schema 'Error' added to components",
+            "oldValue": null,
+            "newValue": {
+              "type": "object",
+              "required": [
+                "error"
+              ],
+              "additionalProperties": false,
+              "description": "All application JSON errors share this envelope. Do not expose stacks, SQL, tokens or raw metadata.",
+              "properties": {
+                "error": {
+                  "type": "object",
+                  "required": [
+                    "code",
+                    "message"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "description": "Stable machine-readable failure code; clients must tolerate future codes."
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Actionable owner-facing message."
+                    }
+                  },
+                  "description": "Actionable machine code and human message; no internal diagnostics."
+                }
+              },
+              "example": {
+                "error": {
+                  "code": "VALIDATION_ERROR",
+                  "message": "Choose an existing gallery before uploading."
+                }
+              }
+            },
+            "migrationGuide": "",
+            "impactDescription": "New reusable schema available"
+          },
+          {
+            "changeType": "enhancement",
+            "severity": "info",
+            "category": "components",
+            "path": "/components/schemas/Photo",
+            "message": "New schema 'Photo' added to components",
+            "oldValue": null,
+            "newValue": {
+              "type": "object",
+              "required": [
+                "id",
+                "galleryId",
+                "fileName"
+              ],
+              "description": "Saved original and locally prepared derivative metadata, without raw EXIF or filesystem paths. Publication chooses a snapshot of photo IDs; upload alone does not publish.",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Immutable photo ID; URLs remain stable."
+                },
+                "galleryId": {
+                  "type": "string",
+                  "description": "Destination album ID."
+                },
+                "fileName": {
+                  "type": "string",
+                  "description": "Original display filename, not a trusted filesystem path."
+                },
+                "mimeType": {
+                  "type": "string",
+                  "description": "Validated original media type."
+                },
+                "width": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Oriented display width in pixels."
+                },
+                "height": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Oriented display height in pixels."
+                },
+                "dateTaken": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "Per-image capture date or clearly identified fallback. ISO 8601 date or date-time; EXIF has no reliable timezone when none was recorded."
+                },
+                "sport": {
+                  "type": "string",
+                  "description": "Sport label."
+                },
+                "location": {
+                  "type": "string",
+                  "description": "Owner-provided location label."
+                },
+                "capturedAt": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "Local ingestion time; does not substitute for capture time. ISO 8601 date or date-time; EXIF has no reliable timezone when none was recorded."
+                },
+                "sizeBytes": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Original byte length."
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$",
+                  "description": "SHA-256 of the original bytes; downloads must reproduce these bytes."
+                },
+                "thumbnailUrl": {
+                  "type": "string",
+                  "description": "Private local media URL in owner mode or immutable derivative path in the separately exported static manifest."
+                },
+                "previewUrl": {
+                  "type": "string",
+                  "description": "Locally optimized preview URL, not the original-quality download."
+                },
+                "originalUrl": {
+                  "type": "string",
+                  "description": "Unmodified-original URL; draft originals must not appear in public manifests/output."
+                },
+                "hasGps": {
+                  "type": "boolean",
+                  "description": "Whether original GPS metadata was detected. False is not a guarantee that every possible sensitive tag was audited."
+                },
+                "metadataSource": {
+                  "type": "string",
+                  "description": "Capture-date provenance such as manual, EXIF, last-modified or unavailable; actual enum vocabulary is not established here."
+                }
+              },
+              "example": {
+                "id": "photo-example",
+                "galleryId": "gallery-example",
+                "fileName": "action.jpg",
+                "mimeType": "image/jpeg",
+                "width": 6000,
+                "height": 4000,
+                "dateTaken": "2026-09-17T18:30:00",
+                "sport": "Football",
+                "location": "Local stadium",
+                "capturedAt": "2026-09-18T00:01:00Z",
+                "sizeBytes": 20000000,
+                "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+                "thumbnailUrl": "/media/photo-example/thumbnail.webp",
+                "previewUrl": "/media/photo-example/preview.webp",
+                "originalUrl": "/media/photo-example/original.jpg",
+                "hasGps": false,
+                "metadataSource": "exif"
+              }
+            },
+            "migrationGuide": "",
+            "impactDescription": "New reusable schema available"
+          },
+          {
+            "changeType": "enhancement",
+            "severity": "info",
+            "category": "components",
+            "path": "/components/schemas/MetadataInspectionRequest",
+            "message": "New schema 'MetadataInspectionRequest' added to components",
+            "oldValue": null,
+            "newValue": {
+              "type": "object",
+              "required": [
+                "photo"
+              ],
+              "description": "Transient multipart image inspection; no persistent photo or gallery record is created.",
+              "properties": {
+                "photo": {
+                  "type": "string",
+                  "format": "binary",
+                  "description": "Exactly one original image, unmodified; maximum 104,857,600 bytes (100 MiB). Decoder-supported JPEG, PNG, WebP, AVIF, or TIFF; first frame only for multi-frame images."
+                },
+                "lastModified": {
+                  "type": "string",
+                  "pattern": "^[0-9]+$",
+                  "description": "Optional browser file.lastModified timestamp in milliseconds, serialized as a multipart text field. Only a fallback; not evidence of capture date."
+                }
+              },
+              "example": {
+                "photo": "<binary original image>",
+                "lastModified": "1789687800000"
+              }
+            },
+            "migrationGuide": "",
+            "impactDescription": "New reusable schema available"
+          },
+          {
+            "changeType": "enhancement",
+            "severity": "info",
+            "category": "components",
+            "path": "/components/schemas/Session",
+            "message": "New schema 'Session' added to components",
+            "oldValue": null,
+            "newValue": {
+              "type": "object",
+              "required": [
+                "token"
+              ],
+              "description": "Private local bootstrap response. The frontend exposes only {admin:true}, retaining token internally.",
+              "properties": {
+                "token": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Opaque bearer secret. Never log, cache publicly, or export."
+                }
+              },
+              "example": {
+                "token": "<opaque-local-owner-token>"
+              }
+            },
+            "migrationGuide": "",
+            "impactDescription": "New reusable schema available"
+          },
+          {
+            "changeType": "enhancement",
+            "severity": "info",
+            "category": "components",
+            "path": "/components/schemas/ExportRequest",
+            "message": "New schema 'ExportRequest' added to components",
+            "oldValue": null,
+            "newValue": {
+              "type": "object",
+              "description": "Empty object used by exportSite(); no provider credentials or deployment target are accepted.",
+              "properties": {},
+              "additionalProperties": false,
+              "example": {}
+            },
+            "migrationGuide": "",
+            "impactDescription": "New reusable schema available"
+          },
+          {
+            "changeType": "enhancement",
+            "severity": "info",
+            "category": "components",
+            "path": "/components/schemas/Gallery",
+            "message": "New schema 'Gallery' added to components",
+            "oldValue": null,
+            "newValue": {
+              "type": "object",
+              "required": [
+                "id",
+                "name"
+              ],
+              "description": "Saved owner-facing album; owner reads include drafts. Public manifests are separately generated from deliberate publication snapshots.",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Stable immutable album ID."
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Gallery title; required when creating."
+                },
+                "description": {
+                  "type": "string",
+                  "description": "Optional curated introduction."
+                },
+                "sport": {
+                  "type": "string",
+                  "description": "Owner-provided sport label; no automatic sport inference is claimed."
+                },
+                "location": {
+                  "type": "string",
+                  "description": "Owner-provided venue or location; GPS is not automatically reverse-geocoded."
+                },
+                "eventDate": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "Owner-provided album date. ISO 8601 date or date-time; EXIF has no reliable timezone when none was recorded."
+                },
+                "themePreset": {
+                  "type": "string",
+                  "description": "Preset identifier understood by the frontend; not a provider-side theme setting."
+                },
+                "themeColor": {
+                  "type": "string",
+                  "pattern": "^#[0-9a-fA-F]{6}$",
+                  "description": "Custom six-digit hexadecimal accent color. The frontend must retain legible light/dark contrast."
+                },
+                "coverPhotoId": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "Photo ID belonging to this gallery, or null to use the default cover."
+                },
+                "publishedAt": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "Last deliberate publication time, null for an unpublished album. ISO 8601 date or date-time; EXIF has no reliable timezone when none was recorded."
+                },
+                "createdAt": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "Creation time. ISO 8601 date or date-time; EXIF has no reliable timezone when none was recorded."
+                },
+                "photoCount": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Owner-visible photo count. Public photo count must refer to the last published snapshot."
+                },
+                "cover": {
+                  "description": "Cover photo when available, otherwise null.",
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/Photo"
+                    },
+                    {
+                      "type": "object",
+                      "nullable": true,
+                      "enum": [
+                        null
+                      ],
+                      "description": "No selected cover."
+                    }
+                  ]
+                }
+              },
+              "example": {
+                "id": "gallery-example",
+                "name": "Friday under lights",
+                "description": "A season in motion.",
+                "sport": "Football",
+                "location": "Local stadium",
+                "eventDate": "2026-09-17",
+                "themePreset": "example-preset",
+                "themeColor": "#b6c780",
+                "coverPhotoId": null,
+                "publishedAt": null,
+                "createdAt": "2026-09-18T00:00:00Z",
+                "photoCount": 0,
+                "cover": null
+              }
+            },
+            "migrationGuide": "",
+            "impactDescription": "New reusable schema available"
+          },
+          {
+            "changeType": "enhancement",
+            "severity": "info",
+            "category": "components",
+            "path": "/components/schemas/ExportResult",
+            "message": "New schema 'ExportResult' added to components",
+            "oldValue": null,
+            "newValue": {
+              "type": "object",
+              "required": [
+                "outputPath",
+                "fileCount",
+                "totalBytes"
+              ],
+              "description": "Completed local static output. Not a hosted URL or confirmation of deployment.",
+              "properties": {
+                "outputPath": {
+                  "type": "string",
+                  "description": "Private local absolute output directory; never copied into public data."
+                },
+                "fileCount": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Complete output asset count, including code, manifests, images and originals."
+                },
+                "totalBytes": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Complete output byte count."
+                }
+              },
+              "example": {
+                "outputPath": "/example/local/public-site",
+                "fileCount": 184,
+                "totalBytes": 1048576000
+              }
+            },
+            "migrationGuide": "",
+            "impactDescription": "New reusable schema available"
+          },
+          {
+            "changeType": "enhancement",
+            "severity": "info",
+            "category": "components",
+            "path": "/components/schemas/GalleryCreate",
+            "message": "New schema 'GalleryCreate' added to components",
+            "oldValue": null,
+            "newValue": {
+              "type": "object",
+              "required": [
+                "name"
+              ],
+              "description": "Editable album fields; new albums are drafts. Unknown-field policy must be confirmed against implementation.",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Gallery title; required when creating.",
+                  "minLength": 1
+                },
+                "description": {
+                  "type": "string",
+                  "description": "Optional curated introduction."
+                },
+                "sport": {
+                  "type": "string",
+                  "description": "Owner-provided sport label; no automatic sport inference is claimed."
+                },
+                "location": {
+                  "type": "string",
+                  "description": "Owner-provided venue or location; GPS is not automatically reverse-geocoded."
+                },
+                "eventDate": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "Owner-provided album date. ISO 8601 date or date-time; EXIF has no reliable timezone when none was recorded."
+                },
+                "themePreset": {
+                  "type": "string",
+                  "description": "Preset identifier understood by the frontend; not a provider-side theme setting."
+                },
+                "themeColor": {
+                  "type": "string",
+                  "pattern": "^#[0-9a-fA-F]{6}$",
+                  "description": "Custom six-digit hexadecimal accent color. The frontend must retain legible light/dark contrast."
+                },
+                "coverPhotoId": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "Photo ID belonging to this gallery, or null to use the default cover."
+                }
+              },
+              "example": {
+                "name": "Friday under lights",
+                "description": "A season in motion.",
+                "sport": "Football",
+                "location": "Local stadium",
+                "eventDate": "2026-09-17",
+                "themeColor": "#b6c780"
+              }
+            },
+            "migrationGuide": "",
+            "impactDescription": "New reusable schema available"
+          },
+          {
+            "changeType": "potentially_breaking",
+            "severity": "medium",
+            "category": "security",
+            "path": "/components/securitySchemes",
+            "message": "Security scheme definitions changed",
+            "oldValue": {},
+            "newValue": {
+              "OwnerBearer": {
+                "type": "http",
+                "scheme": "bearer",
+                "description": "Opaque owner token issued only by guarded GET /api/v1/session; not a JWT, OAuth token, viewer credential, or public API key. Required for all other manager operations. Re-bootstrap after token invalidation/restart."
+              }
+            },
+            "migrationGuide": "Review authentication implementation for compatibility with new security schemes",
+            "impactDescription": "Authentication mechanisms may have changed"
+          }
+        ]
+      },
+      "stdout": "{\n  \"summary\": {\n    \"total_changes\": 25,\n    \"breaking_changes\": 0,\n    \"potentially_breaking_changes\": 1,\n    \"non_breaking_changes\": 2,\n    \"enhancements\": 22,\n    \"critical_severity\": 0,\n    \"high_severity\": 0,\n    \"medium_severity\": 1,\n    \"low_severity\": 0,\n    \"info_severity\": 24\n  },\n  \"hasBreakingChanges\": true,\n  \"changes\": [\n    {\n      \"changeType\": \"non_breaking\",\n      \"severity\": \"info\",\n      \"category\": \"versioning\",\n      \"path\": \"/info/version\",\n      \"message\": \"API version changed from '0.0.0' to '1.0.0'\",\n      \"oldValue\": \"0.0.0\",\n      \"newValue\": \"1.0.0\",\n      \"migrationGuide\": \"\",\n      \"impactDescription\": \"Version change indicates API evolution\"\n    },\n    {\n      \"changeType\": \"non_breaking\",\n      \"severity\": \"info\",\n      \"category\": \"metadata\",\n      \"path\": \"/info/title\",\n      \"message\": \"API title changed from 'Explicit empty baseline \\u2014 unpublished prototype has no existing API spec' to 'Sports Photo Gallery \\u2014 Local Owner API'\",\n      \"oldValue\": \"Explicit empty baseline \\u2014 unpublished prototype has no existing API spec\",\n      \"newValue\": \"Sports Photo Gallery \\u2014 Local Owner API\",\n      \"migrationGuide\": \"\",\n      \"impactDescription\": \"Title change is cosmetic and doesn't affect functionality\"\n    },\n    {\n      \"changeType\": \"enhancement\",\n      \"severity\": \"info\",\n      \"category\": \"servers\",\n      \"path\": \"/servers\",\n      \"message\": \"New server URL added: http://127.0.0.1:5000\",\n      \"oldValue\": null,\n      \"newValue\": \"http://127.0.0.1:5000\",\n      \"migrationGuide\": \"\",\n      \"impactDescription\": \"New server option provides additional deployment flexibility\"\n    },\n    {\n      \"changeType\": \"enhancement\",\n      \"severity\": \"info\",\n      \"category\": \"endpoints\",\n      \"path\": \"/paths/api/v1/session\",\n      \"message\": \"New endpoint added: GET /api/v1/session\",\n      \"oldValue\": null,\n      \"newValue\": \"GET /api/v1/session\",\n      \"migrationGuide\": \"\",\n      \"impactDescription\": \"New functionality available to clients\"\n    },\n    {\n      \"changeType\": \"enhancement\",\n      \"severity\": \"info\",\n      \"category\": \"endpoints\",\n      \"path\": \"/paths/api/v1/galleries\",\n      \"message\": \"New endpoint added: GET /api/v1/galleries\",\n      \"oldValue\": null,\n      \"newValue\": \"GET /api/v1/galleries\",\n      \"migrationGuide\": \"\",\n      \"impactDescription\": \"New functionality available to clients\"\n    },\n    {\n      \"changeType\": \"enhancement\",\n      \"severity\": \"info\",\n      \"category\": \"endpoints\",\n      \"path\": \"/paths/api/v1/galleries\",\n      \"message\": \"New endpoint added: POST /api/v1/galleries\",\n      \"oldValue\": null,\n      \"newValue\": \"POST /api/v1/galleries\",\n      \"migrationGuide\": \"\",\n      \"impactDescription\": \"New functionality available to clients\"\n    },\n    {\n      \"changeType\": \"enhancement\",\n      \"severity\": \"info\",\n      \"category\": \"endpoints\",\n      \"path\": \"/paths/api/v1/galleries/{id}/photos\",\n      \"message\": \"New endpoint added: GET /api/v1/galleries/{id}/photos\",\n      \"oldValue\": null,\n      \"newValue\": \"GET /api/v1/galleries/{id}/photos\",\n      \"migrationGuide\": \"\",\n      \"impactDescription\": \"New functionality available to clients\"\n    },\n    {\n      \"changeType\": \"enhancement\",\n      \"severity\": \"info\",\n      \"category\": \"endpoints\",\n      \"path\": \"/paths/api/v1/galleries/{id}/publication\",\n      \"message\": \"New endpoint added: POST /api/v1/galleries/{id}/publication\",\n      \"oldValue\": null,\n      \"newValue\": \"POST /api/v1/galleries/{id}/publication\",\n      \"migrationGuide\": \"\",\n      \"impactDescription\": \"New functionality available to clients\"\n    },\n    {\n      \"changeType\": \"enhancement\",\n      \"severity\": \"info\",\n      \"category\": \"endpoints\",\n      \"path\": \"/paths/api/v1/photos\",\n      \"message\": \"New endpoint added: POST /api/v1/photos\",\n      \"oldValue\": null,\n      \"newValue\": \"POST /api/v1/photos\",\n      \"migrationGuide\": \"\",\n      \"impactDescription\": \"New functionality available to clients\"\n    },\n    {\n      \"changeType\": \"enhancement\",\n      \"severity\": \"info\",\n      \"category\": \"endpoints\",\n      \"path\": \"/paths/api/v1/exports\",\n      \"message\": \"New endpoint added: POST /api/v1/exports\",\n      \"oldValue\": null,\n      \"newValue\": \"POST /api/v1/exports\",\n      \"migrationGuide\": \"\",\n      \"impactDescription\": \"New functionality available to clients\"\n    },\n    {\n      \"changeType\": \"enhancement\",\n      \"severity\": \"info\",\n      \"category\": \"endpoints\",\n      \"path\": \"/paths/api/v1/metadata-inspections\",\n      \"message\": \"New endpoint added: POST /api/v1/metadata-inspections\",\n      \"oldValue\": null,\n      \"newValue\": \"POST /api/v1/metadata-inspections\",\n      \"migrationGuide\": \"\",\n      \"impactDescription\": \"New functionality available to clients\"\n    },\n    {\n      \"changeType\": \"enhancement\",\n      \"severity\": \"info\",\n      \"category\": \"endpoints\",\n      \"path\": \"/paths/api/v1/galleries/{id}\",\n      \"message\": \"New endpoint added: PATCH /api/v1/galleries/{id}\",\n      \"oldValue\": null,\n      \"newValue\": \"PATCH /api/v1/galleries/{id}\",\n      \"migrationGuide\": \"\",\n      \"impactDescription\": \"New functionality available to clients\"\n    },\n    {\n      \"changeType\": \"enhancement\",\n      \"severity\": \"info\",\n      \"category\": \"components\",\n      \"path\": \"/components/schemas/GalleryUpdate\",\n      \"message\": \"New schema 'GalleryUpdate' added to components\",\n      \"oldValue\": null,\n      \"newValue\": {\n        \"type\": \"object\",\n        \"minProperties\": 1,\n        \"description\": \"Partial editable gallery fields. Omitted fields are unchanged. Null clears only explicitly nullable fields. No client-controlled publication time, count or IDs.\",\n        \"properties\": {\n          \"name\": {\n            \"type\": \"string\",\n            \"description\": \"Gallery title; required when creating.\",\n            \"minLength\": 1\n          },\n          \"description\": {\n            \"type\": \"string\",\n            \"description\": \"Optional curated introduction.\"\n          },\n          \"sport\": {\n            \"type\": \"string\",\n            \"description\": \"Owner-provided sport label; no automatic sport inference is claimed.\"\n          },\n          \"location\": {\n            \"type\": \"string\",\n            \"description\": \"Owner-provided venue or location; GPS is not automatically reverse-geocoded.\"\n          },\n          \"eventDate\": {\n            \"type\": \"string\",\n            \"nullable\": true,\n            \"description\": \"Owner-provided album date. ISO 8601 date or date-time; EXIF has no reliable timezone when none was recorded.\"\n          },\n          \"themePreset\": {\n            \"type\": \"string\",\n            \"description\": \"Preset identifier understood by the frontend; not a provider-side theme setting.\"\n          },\n          \"themeColor\": {\n            \"type\": \"string\",\n            \"pattern\": \"^#[0-9a-fA-F]{6}$\",\n            \"description\": \"Custom six-digit hexadecimal accent color. The frontend must retain legible light/dark contrast.\"\n          },\n          \"coverPhotoId\": {\n            \"type\": \"string\",\n            \"nullable\": true,\n            \"description\": \"Photo ID belonging to this gallery, or null to use the default cover.\"\n          }\n        },\n        \"example\": {\n          \"description\": \"The final whistle.\",\n          \"themeColor\": \"#b6c780\"\n        }\n      },\n      \"migrationGuide\": \"\",\n      \"impactDescription\": \"New reusable schema available\"\n    },\n    {\n      \"changeType\": \"enhancement\",\n      \"severity\": \"info\",\n      \"category\": \"components\",\n      \"path\": \"/components/schemas/MetadataInspection\",\n      \"message\": \"New schema 'MetadataInspection' added to components\",\n      \"oldValue\": null,\n      \"newValue\": {\n        \"type\": \"object\",\n        \"description\": \"Detected metadata for owner review, not sport/location inference or a complete privacy audit.\",\n        \"properties\": {\n          \"dateTaken\": {\n            \"type\": \"string\",\n            \"nullable\": true,\n            \"description\": \"This file\\u2019s own detected/fallback date. ISO 8601 date or date-time; EXIF has no reliable timezone when none was recorded.\"\n          },\n          \"metadataSource\": {\n            \"type\": \"string\",\n            \"description\": \"Date source.\"\n          },\n          \"width\": {\n            \"type\": \"integer\",\n            \"minimum\": 0,\n            \"description\": \"Oriented width.\"\n          },\n          \"height\": {\n            \"type\": \"integer\",\n            \"minimum\": 0,\n            \"description\": \"Oriented height.\"\n          },\n          \"hasGps\": {\n            \"type\": \"boolean\",\n            \"description\": \"Detected original GPS metadata presence.\"\n          },\n          \"camera\": {\n            \"type\": \"string\",\n            \"nullable\": true,\n            \"description\": \"Detected camera description, when available; transient inspection only.\"\n          }\n        },\n        \"example\": {\n          \"dateTaken\": \"2026-09-17T18:30:00\",\n          \"metadataSource\": \"exif\",\n          \"width\": 6000,\n          \"height\": 4000,\n          \"hasGps\": false,\n          \"camera\": \"Example camera\"\n        }\n      },\n      \"migrationGuide\": \"\",\n      \"impactDescription\": \"New reusable schema available\"\n    },\n    {\n      \"changeType\": \"enhancement\",\n      \"severity\": \"info\",\n      \"category\": \"components\",\n      \"path\": \"/components/schemas/PhotoUpload\",\n      \"message\": \"New schema 'PhotoUpload' added to components\",\n      \"oldValue\": null,\n      \"newValue\": {\n        \"type\": \"object\",\n        \"required\": [\n          \"photo\",\n          \"galleryId\"\n        ],\n        \"description\": \"One multipart photo per request. Batch upload consists of bounded client requests with per-file progress, retry and cancellation.\",\n        \"properties\": {\n          \"photo\": {\n            \"type\": \"string\",\n            \"format\": \"binary\",\n            \"description\": \"Exactly one original image, unmodified; maximum 104,857,600 bytes (100 MiB). Decoder-supported JPEG, PNG, WebP, AVIF, or TIFF; first frame only for multi-frame images.\"\n          },\n          \"galleryId\": {\n            \"type\": \"string\",\n            \"description\": \"Existing destination gallery ID.\"\n          },\n          \"sport\": {\n            \"type\": \"string\",\n            \"description\": \"Optional explicit photo sport; never inferred from pixels.\"\n          },\n          \"location\": {\n            \"type\": \"string\",\n            \"description\": \"Optional explicit photo location.\"\n          },\n          \"date\": {\n            \"type\": \"string\",\n            \"description\": \"Optional explicit date override. The manager resolves an individual override before an explicit batch override; omission preserves this photo\\u2019s own EXIF date, then its own lastModified fallback.\"\n          },\n          \"lastModified\": {\n            \"type\": \"string\",\n            \"pattern\": \"^[0-9]+$\",\n            \"description\": \"Optional browser file.lastModified timestamp in milliseconds, serialized as a multipart text field. Only a fallback; not evidence of capture date.\"\n          }\n        },\n        \"example\": {\n          \"photo\": \"<binary original image>\",\n          \"galleryId\": \"gallery-example\",\n          \"sport\": \"Football\",\n          \"lastModified\": \"1789687800000\"\n        }\n      },\n      \"migrationGuide\": \"\",\n      \"impactDescription\": \"New reusable schema available\"\n    },\n    {\n      \"changeType\": \"enhancement\",\n      \"severity\": \"info\",\n      \"category\": \"components\",\n      \"path\": \"/components/schemas/PublicationRequest\",\n      \"message\": \"New schema 'PublicationRequest' added to components\",\n      \"oldValue\": null,\n      \"newValue\": {\n        \"type\": \"object\",\n        \"required\": [\n          \"acknowledgePublicOriginals\"\n        ],\n        \"description\": \"Deliberate acknowledgement before publishing current album photo IDs. Original EXIF (including GPS if present) is unchanged and can be downloaded publicly.\",\n        \"properties\": {\n          \"acknowledgePublicOriginals\": {\n            \"type\": \"boolean\",\n            \"enum\": [\n              true\n            ],\n            \"description\": \"Must explicitly be true; there is no implicit publication on upload.\"\n          }\n        },\n        \"example\": {\n          \"acknowledgePublicOriginals\": true\n        }\n      },\n      \"migrationGuide\": \"\",\n      \"impactDescription\": \"New reusable schema available\"\n    },\n    {\n      \"changeType\": \"enhancement\",\n      \"severity\": \"info\",\n      \"category\": \"components\",\n      \"path\": \"/components/schemas/Error\",\n      \"message\": \"New schema 'Error' added to components\",\n      \"oldValue\": null,\n      \"newValue\": {\n        \"type\": \"object\",\n        \"required\": [\n          \"error\"\n        ],\n        \"additionalProperties\": false,\n        \"description\": \"All application JSON errors share this envelope. Do not expose stacks, SQL, tokens or raw metadata.\",\n        \"properties\": {\n          \"error\": {\n            \"type\": \"object\",\n            \"required\": [\n              \"code\",\n              \"message\"\n            ],\n            \"additionalProperties\": false,\n            \"properties\": {\n              \"code\": {\n                \"type\": \"string\",\n                \"description\": \"Stable machine-readable failure code; clients must tolerate future codes.\"\n              },\n              \"message\": {\n                \"type\": \"string\",\n                \"description\": \"Actionable owner-facing message.\"\n              }\n            },\n            \"description\": \"Actionable machine code and human message; no internal diagnostics.\"\n          }\n        },\n        \"example\": {\n          \"error\": {\n            \"code\": \"VALIDATION_ERROR\",\n            \"message\": \"Choose an existing gallery before uploading.\"\n          }\n        }\n      },\n      \"migrationGuide\": \"\",\n      \"impactDescription\": \"New reusable schema available\"\n    },\n    {\n      \"changeType\": \"enhancement\",\n      \"severity\": \"info\",\n      \"category\": \"components\",\n      \"path\": \"/components/schemas/Photo\",\n      \"message\": \"New schema 'Photo' added to components\",\n      \"oldValue\": null,\n      \"newValue\": {\n        \"type\": \"object\",\n        \"required\": [\n          \"id\",\n          \"galleryId\",\n          \"fileName\"\n        ],\n        \"description\": \"Saved original and locally prepared derivative metadata, without raw EXIF or filesystem paths. Publication chooses a snapshot of photo IDs; upload alone does not publish.\",\n        \"properties\": {\n          \"id\": {\n            \"type\": \"string\",\n            \"description\": \"Immutable photo ID; URLs remain stable.\"\n          },\n          \"galleryId\": {\n            \"type\": \"string\",\n            \"description\": \"Destination album ID.\"\n          },\n          \"fileName\": {\n            \"type\": \"string\",\n            \"description\": \"Original display filename, not a trusted filesystem path.\"\n          },\n          \"mimeType\": {\n            \"type\": \"string\",\n            \"description\": \"Validated original media type.\"\n          },\n          \"width\": {\n            \"type\": \"integer\",\n            \"minimum\": 0,\n            \"description\": \"Oriented display width in pixels.\"\n          },\n          \"height\": {\n            \"type\": \"integer\",\n            \"minimum\": 0,\n            \"description\": \"Oriented display height in pixels.\"\n          },\n          \"dateTaken\": {\n            \"type\": \"string\",\n            \"nullable\": true,\n            \"description\": \"Per-image capture date or clearly identified fallback. ISO 8601 date or date-time; EXIF has no reliable timezone when none was recorded.\"\n          },\n          \"sport\": {\n            \"type\": \"string\",\n            \"description\": \"Sport label.\"\n          },\n          \"location\": {\n            \"type\": \"string\",\n            \"description\": \"Owner-provided location label.\"\n          },\n          \"capturedAt\": {\n            \"type\": \"string\",\n            \"nullable\": true,\n            \"description\": \"Local ingestion time; does not substitute for capture time. ISO 8601 date or date-time; EXIF has no reliable timezone when none was recorded.\"\n          },\n          \"sizeBytes\": {\n            \"type\": \"integer\",\n            \"minimum\": 0,\n            \"description\": \"Original byte length.\"\n          },\n          \"sha256\": {\n            \"type\": \"string\",\n            \"pattern\": \"^[a-f0-9]{64}$\",\n            \"description\": \"SHA-256 of the original bytes; downloads must reproduce these bytes.\"\n          },\n          \"thumbnailUrl\": {\n            \"type\": \"string\",\n            \"description\": \"Private local media URL in owner mode or immutable derivative path in the separately exported static manifest.\"\n          },\n          \"previewUrl\": {\n            \"type\": \"string\",\n            \"description\": \"Locally optimized preview URL, not the original-quality download.\"\n          },\n          \"originalUrl\": {\n            \"type\": \"string\",\n            \"description\": \"Unmodified-original URL; draft originals must not appear in public manifests/output.\"\n          },\n          \"hasGps\": {\n            \"type\": \"boolean\",\n            \"description\": \"Whether original GPS metadata was detected. False is not a guarantee that every possible sensitive tag was audited.\"\n          },\n          \"metadataSource\": {\n            \"type\": \"string\",\n            \"description\": \"Capture-date provenance such as manual, EXIF, last-modified or unavailable; actual enum vocabulary is not established here.\"\n          }\n        },\n        \"example\": {\n          \"id\": \"photo-example\",\n          \"galleryId\": \"gallery-example\",\n          \"fileName\": \"action.jpg\",\n          \"mimeType\": \"image/jpeg\",\n          \"width\": 6000,\n          \"height\": 4000,\n          \"dateTaken\": \"2026-09-17T18:30:00\",\n          \"sport\": \"Football\",\n          \"location\": \"Local stadium\",\n          \"capturedAt\": \"2026-09-18T00:01:00Z\",\n          \"sizeBytes\": 20000000,\n          \"sha256\": \"0000000000000000000000000000000000000000000000000000000000000000\",\n          \"thumbnailUrl\": \"/media/photo-example/thumbnail.webp\",\n          \"previewUrl\": \"/media/photo-example/preview.webp\",\n          \"originalUrl\": \"/media/photo-example/original.jpg\",\n          \"hasGps\": false,\n          \"metadataSource\": \"exif\"\n        }\n      },\n      \"migrationGuide\": \"\",\n      \"impactDescription\": \"New reusable schema available\"\n    },\n    {\n      \"changeType\": \"enhancement\",\n      \"severity\": \"info\",\n      \"category\": \"components\",\n      \"path\": \"/components/schemas/MetadataInspectionRequest\",\n      \"message\": \"New schema 'MetadataInspectionRequest' added to components\",\n      \"oldValue\": null,\n      \"newValue\": {\n        \"type\": \"object\",\n        \"required\": [\n          \"photo\"\n        ],\n        \"description\": \"Transient multipart image inspection; no persistent photo or gallery record is created.\",\n        \"properties\": {\n          \"photo\": {\n            \"type\": \"string\",\n            \"format\": \"binary\",\n            \"description\": \"Exactly one original image, unmodified; maximum 104,857,600 bytes (100 MiB). Decoder-supported JPEG, PNG, WebP, AVIF, or TIFF; first frame only for multi-frame images.\"\n          },\n          \"lastModified\": {\n            \"type\": \"string\",\n            \"pattern\": \"^[0-9]+$\",\n            \"description\": \"Optional browser file.lastModified timestamp in milliseconds, serialized as a multipart text field. Only a fallback; not evidence of capture date.\"\n          }\n        },\n        \"example\": {\n          \"photo\": \"<binary original image>\",\n          \"lastModified\": \"1789687800000\"\n        }\n      },\n      \"migrationGuide\": \"\",\n      \"impactDescription\": \"New reusable schema available\"\n    },\n    {\n      \"changeType\": \"enhancement\",\n      \"severity\": \"info\",\n      \"category\": \"components\",\n      \"path\": \"/components/schemas/Session\",\n      \"message\": \"New schema 'Session' added to components\",\n      \"oldValue\": null,\n      \"newValue\": {\n        \"type\": \"object\",\n        \"required\": [\n          \"token\"\n        ],\n        \"description\": \"Private local bootstrap response. The frontend exposes only {admin:true}, retaining token internally.\",\n        \"properties\": {\n          \"token\": {\n            \"type\": \"string\",\n            \"minLength\": 1,\n            \"description\": \"Opaque bearer secret. Never log, cache publicly, or export.\"\n          }\n        },\n        \"example\": {\n          \"token\": \"<opaque-local-owner-token>\"\n        }\n      },\n      \"migrationGuide\": \"\",\n      \"impactDescription\": \"New reusable schema available\"\n    },\n    {\n      \"changeType\": \"enhancement\",\n      \"severity\": \"info\",\n      \"category\": \"components\",\n      \"path\": \"/components/schemas/ExportRequest\",\n      \"message\": \"New schema 'ExportRequest' added to components\",\n      \"oldValue\": null,\n      \"newValue\": {\n        \"type\": \"object\",\n        \"description\": \"Empty object used by exportSite(); no provider credentials or deployment target are accepted.\",\n        \"properties\": {},\n        \"additionalProperties\": false,\n        \"example\": {}\n      },\n      \"migrationGuide\": \"\",\n      \"impactDescription\": \"New reusable schema available\"\n    },\n    {\n      \"changeType\": \"enhancement\",\n      \"severity\": \"info\",\n      \"category\": \"components\",\n      \"path\": \"/components/schemas/Gallery\",\n      \"message\": \"New schema 'Gallery' added to components\",\n      \"oldValue\": null,\n      \"newValue\": {\n        \"type\": \"object\",\n        \"required\": [\n          \"id\",\n          \"name\"\n        ],\n        \"description\": \"Saved owner-facing album; owner reads include drafts. Public manifests are separately generated from deliberate publication snapshots.\",\n        \"properties\": {\n          \"id\": {\n            \"type\": \"string\",\n            \"description\": \"Stable immutable album ID.\"\n          },\n          \"name\": {\n            \"type\": \"string\",\n            \"description\": \"Gallery title; required when creating.\"\n          },\n          \"description\": {\n            \"type\": \"string\",\n            \"description\": \"Optional curated introduction.\"\n          },\n          \"sport\": {\n            \"type\": \"string\",\n            \"description\": \"Owner-provided sport label; no automatic sport inference is claimed.\"\n          },\n          \"location\": {\n            \"type\": \"string\",\n            \"description\": \"Owner-provided venue or location; GPS is not automatically reverse-geocoded.\"\n          },\n          \"eventDate\": {\n            \"type\": \"string\",\n            \"nullable\": true,\n            \"description\": \"Owner-provided album date. ISO 8601 date or date-time; EXIF has no reliable timezone when none was recorded.\"\n          },\n          \"themePreset\": {\n            \"type\": \"string\",\n            \"description\": \"Preset identifier understood by the frontend; not a provider-side theme setting.\"\n          },\n          \"themeColor\": {\n            \"type\": \"string\",\n            \"pattern\": \"^#[0-9a-fA-F]{6}$\",\n            \"description\": \"Custom six-digit hexadecimal accent color. The frontend must retain legible light/dark contrast.\"\n          },\n          \"coverPhotoId\": {\n            \"type\": \"string\",\n            \"nullable\": true,\n            \"description\": \"Photo ID belonging to this gallery, or null to use the default cover.\"\n          },\n          \"publishedAt\": {\n            \"type\": \"string\",\n            \"nullable\": true,\n            \"description\": \"Last deliberate publication time, null for an unpublished album. ISO 8601 date or date-time; EXIF has no reliable timezone when none was recorded.\"\n          },\n          \"createdAt\": {\n            \"type\": \"string\",\n            \"nullable\": true,\n            \"description\": \"Creation time. ISO 8601 date or date-time; EXIF has no reliable timezone when none was recorded.\"\n          },\n          \"photoCount\": {\n            \"type\": \"integer\",\n            \"minimum\": 0,\n            \"description\": \"Owner-visible photo count. Public photo count must refer to the last published snapshot.\"\n          },\n          \"cover\": {\n            \"description\": \"Cover photo when available, otherwise null.\",\n            \"oneOf\": [\n              {\n                \"$ref\": \"#/components/schemas/Photo\"\n              },\n              {\n                \"type\": \"object\",\n                \"nullable\": true,\n                \"enum\": [\n                  null\n                ],\n                \"description\": \"No selected cover.\"\n              }\n            ]\n          }\n        },\n        \"example\": {\n          \"id\": \"gallery-example\",\n          \"name\": \"Friday under lights\",\n          \"description\": \"A season in motion.\",\n          \"sport\": \"Football\",\n          \"location\": \"Local stadium\",\n          \"eventDate\": \"2026-09-17\",\n          \"themePreset\": \"example-preset\",\n          \"themeColor\": \"#b6c780\",\n          \"coverPhotoId\": null,\n          \"publishedAt\": null,\n          \"createdAt\": \"2026-09-18T00:00:00Z\",\n          \"photoCount\": 0,\n          \"cover\": null\n        }\n      },\n      \"migrationGuide\": \"\",\n      \"impactDescription\": \"New reusable schema available\"\n    },\n    {\n      \"changeType\": \"enhancement\",\n      \"severity\": \"info\",\n      \"category\": \"components\",\n      \"path\": \"/components/schemas/ExportResult\",\n      \"message\": \"New schema 'ExportResult' added to components\",\n      \"oldValue\": null,\n      \"newValue\": {\n        \"type\": \"object\",\n        \"required\": [\n          \"outputPath\",\n          \"fileCount\",\n          \"totalBytes\"\n        ],\n        \"description\": \"Completed local static output. Not a hosted URL or confirmation of deployment.\",\n        \"properties\": {\n          \"outputPath\": {\n            \"type\": \"string\",\n            \"description\": \"Private local absolute output directory; never copied into public data.\"\n          },\n          \"fileCount\": {\n            \"type\": \"integer\",\n            \"minimum\": 0,\n            \"description\": \"Complete output asset count, including code, manifests, images and originals.\"\n          },\n          \"totalBytes\": {\n            \"type\": \"integer\",\n            \"minimum\": 0,\n            \"description\": \"Complete output byte count.\"\n          }\n        },\n        \"example\": {\n          \"outputPath\": \"/example/local/public-site\",\n          \"fileCount\": 184,\n          \"totalBytes\": 1048576000\n        }\n      },\n      \"migrationGuide\": \"\",\n      \"impactDescription\": \"New reusable schema available\"\n    },\n    {\n      \"changeType\": \"enhancement\",\n      \"severity\": \"info\",\n      \"category\": \"components\",\n      \"path\": \"/components/schemas/GalleryCreate\",\n      \"message\": \"New schema 'GalleryCreate' added to components\",\n      \"oldValue\": null,\n      \"newValue\": {\n        \"type\": \"object\",\n        \"required\": [\n          \"name\"\n        ],\n        \"description\": \"Editable album fields; new albums are drafts. Unknown-field policy must be confirmed against implementation.\",\n        \"properties\": {\n          \"name\": {\n            \"type\": \"string\",\n            \"description\": \"Gallery title; required when creating.\",\n            \"minLength\": 1\n          },\n          \"description\": {\n            \"type\": \"string\",\n            \"description\": \"Optional curated introduction.\"\n          },\n          \"sport\": {\n            \"type\": \"string\",\n            \"description\": \"Owner-provided sport label; no automatic sport inference is claimed.\"\n          },\n          \"location\": {\n            \"type\": \"string\",\n            \"description\": \"Owner-provided venue or location; GPS is not automatically reverse-geocoded.\"\n          },\n          \"eventDate\": {\n            \"type\": \"string\",\n            \"nullable\": true,\n            \"description\": \"Owner-provided album date. ISO 8601 date or date-time; EXIF has no reliable timezone when none was recorded.\"\n          },\n          \"themePreset\": {\n            \"type\": \"string\",\n            \"description\": \"Preset identifier understood by the frontend; not a provider-side theme setting.\"\n          },\n          \"themeColor\": {\n            \"type\": \"string\",\n            \"pattern\": \"^#[0-9a-fA-F]{6}$\",\n            \"description\": \"Custom six-digit hexadecimal accent color. The frontend must retain legible light/dark contrast.\"\n          },\n          \"coverPhotoId\": {\n            \"type\": \"string\",\n            \"nullable\": true,\n            \"description\": \"Photo ID belonging to this gallery, or null to use the default cover.\"\n          }\n        },\n        \"example\": {\n          \"name\": \"Friday under lights\",\n          \"description\": \"A season in motion.\",\n          \"sport\": \"Football\",\n          \"location\": \"Local stadium\",\n          \"eventDate\": \"2026-09-17\",\n          \"themeColor\": \"#b6c780\"\n        }\n      },\n      \"migrationGuide\": \"\",\n      \"impactDescription\": \"New reusable schema available\"\n    },\n    {\n      \"changeType\": \"potentially_breaking\",\n      \"severity\": \"medium\",\n      \"category\": \"security\",\n      \"path\": \"/components/securitySchemes\",\n      \"message\": \"Security scheme definitions changed\",\n      \"oldValue\": {},\n      \"newValue\": {\n        \"OwnerBearer\": {\n          \"type\": \"http\",\n          \"scheme\": \"bearer\",\n          \"description\": \"Opaque owner token issued only by guarded GET /api/v1/session; not a JWT, OAuth token, viewer credential, or public API key. Required for all other manager operations. Re-bootstrap after token invalidation/restart.\"\n        }\n      },\n      \"migrationGuide\": \"Review authentication implementation for compatibility with new security schemes\",\n      \"impactDescription\": \"Authentication mechanisms may have changed\"\n    }\n  ]\n}\n"
+    },
+    "scorecard": {
+      "command": "python3 <skill>/scripts/api_scorecard.py docs/openapi.json --format json --min-grade B",
+      "exitCode": 1,
+      "diagnosticPrefix": "Grade D is below minimum required grade B",
+      "report": {
+        "overall": {
+          "score": 67.65,
+          "grade": "D",
+          "totalEndpoints": 9
+        },
+        "api_info": {
+          "title": "Sports Photo Gallery — Local Owner API",
+          "version": "1.0.0",
+          "description": "Proposed versioned contract for the private desktop owner manager. Express binds 127.0.0.1:5000; the same-origin local frontend proxies /api and /media. All manager reads and writes are private, except the guarded local session bootstrap which does not require its own bearer token. Public hosting serves static manifests and immutable photo assets only, not this API, tokens, drafts, database, or raw EXIF. This specification is a contract review, not proof that concurrent implementation satisfies it. The unpublished, unversioned prototype is replaced; no external clients have been verified.",
+          "total_paths": 8,
+          "openapi_version": "3.0.3"
+        },
+        "categories": {
+          "consistency": {
+            "score": 88.1,
+            "grade": "B",
+            "weight": 30,
+            "weightedScore": 26.43,
+            "issues": [],
+            "recommendations": []
+          },
+          "documentation": {
+            "score": 81.63,
+            "grade": "B",
+            "weight": 20,
+            "weightedScore": 16.33,
+            "issues": [],
+            "recommendations": []
+          },
+          "security": {
+            "score": 62,
+            "grade": "D",
+            "weight": 20,
+            "weightedScore": 12.4,
+            "issues": [],
+            "recommendations": [
+              "Review security coverage for all endpoints",
+              "Consider additional security measures for sensitive operations"
+            ]
+          },
+          "usability": {
+            "score": 49.27,
+            "grade": "F",
+            "weight": 15,
+            "weightedScore": 7.39,
+            "issues": [],
+            "recommendations": [
+              "Improve error messages with actionable guidance",
+              "Add filtering and search capabilities to list endpoints",
+              "Enhance resource discoverability with better linking"
+            ]
+          },
+          "performance": {
+            "score": 34,
+            "grade": "F",
+            "weight": 15,
+            "weightedScore": 5.1,
+            "issues": [],
+            "recommendations": [
+              "Implement pagination for list endpoints",
+              "Add caching headers for cacheable responses",
+              "Consider batch operations for bulk updates"
+            ]
+          }
+        },
+        "topRecommendations": [
+          "Security: Review security coverage for all endpoints",
+          "Security: Consider additional security measures for sensitive operations",
+          "Usability: Improve error messages with actionable guidance",
+          "Usability: Add filtering and search capabilities to list endpoints",
+          "Performance: Implement pagination for list endpoints"
+        ]
+      },
+      "stdout": "Grade D is below minimum required grade B\n{\n  \"overall\": {\n    \"score\": 67.65,\n    \"grade\": \"D\",\n    \"totalEndpoints\": 9\n  },\n  \"api_info\": {\n    \"title\": \"Sports Photo Gallery \\u2014 Local Owner API\",\n    \"version\": \"1.0.0\",\n    \"description\": \"Proposed versioned contract for the private desktop owner manager. Express binds 127.0.0.1:5000; the same-origin local frontend proxies /api and /media. All manager reads and writes are private, except the guarded local session bootstrap which does not require its own bearer token. Public hosting serves static manifests and immutable photo assets only, not this API, tokens, drafts, database, or raw EXIF. This specification is a contract review, not proof that concurrent implementation satisfies it. The unpublished, unversioned prototype is replaced; no external clients have been verified.\",\n    \"total_paths\": 8,\n    \"openapi_version\": \"3.0.3\"\n  },\n  \"categories\": {\n    \"consistency\": {\n      \"score\": 88.1,\n      \"grade\": \"B\",\n      \"weight\": 30.0,\n      \"weightedScore\": 26.43,\n      \"issues\": [],\n      \"recommendations\": []\n    },\n    \"documentation\": {\n      \"score\": 81.63,\n      \"grade\": \"B\",\n      \"weight\": 20.0,\n      \"weightedScore\": 16.33,\n      \"issues\": [],\n      \"recommendations\": []\n    },\n    \"security\": {\n      \"score\": 62.0,\n      \"grade\": \"D\",\n      \"weight\": 20.0,\n      \"weightedScore\": 12.4,\n      \"issues\": [],\n      \"recommendations\": [\n        \"Review security coverage for all endpoints\",\n        \"Consider additional security measures for sensitive operations\"\n      ]\n    },\n    \"usability\": {\n      \"score\": 49.27,\n      \"grade\": \"F\",\n      \"weight\": 15.0,\n      \"weightedScore\": 7.39,\n      \"issues\": [],\n      \"recommendations\": [\n        \"Improve error messages with actionable guidance\",\n        \"Add filtering and search capabilities to list endpoints\",\n        \"Enhance resource discoverability with better linking\"\n      ]\n    },\n    \"performance\": {\n      \"score\": 34.0,\n      \"grade\": \"F\",\n      \"weight\": 15.0,\n      \"weightedScore\": 5.1,\n      \"issues\": [],\n      \"recommendations\": [\n        \"Implement pagination for list endpoints\",\n        \"Add caching headers for cacheable responses\",\n        \"Consider batch operations for bulk updates\"\n      ]\n    }\n  },\n  \"topRecommendations\": [\n    \"Security: Review security coverage for all endpoints\",\n    \"Security: Consider additional security measures for sensitive operations\",\n    \"Usability: Improve error messages with actionable guidance\",\n    \"Usability: Add filtering and search capabilities to list endpoints\",\n    \"Performance: Implement pagination for list endpoints\"\n  ]\n}\n"
+    },
+    "structuralContractCheck": {
+      "exitCode": 0,
+      "diagnosticPrefix": "",
+      "report": {
+        "scope": "JSON parse, local refs, unique operation IDs, required path parameters and bearer contract only; not full OpenAPI or runtime validation",
+        "operations": 9,
+        "refs": 68,
+        "problems": []
+      },
+      "stdout": "{\n  \"scope\": \"JSON parse, local refs, unique operation IDs, required path parameters and bearer contract only; not full OpenAPI or runtime validation\",\n  \"operations\": 9,\n  \"refs\": 68,\n  \"problems\": []\n}\n"
+    }
+  },
+  "retainedFindings": [
+    "Linter: 0 errors, 0 warnings, 3 informational notices. Retain correct 413 upload/inspection and 503 missing-build semantics.",
+    "Breaking detector: 0 definite breaking changes, 1 potentially breaking security-scheme addition; --exit-on-breaking exits 1. v1 is a new contract replacing an unpublished prototype, not a verified backwards-compatible migration.",
+    "Scorecard: D / 67.65, below B; exits 1. Do not invent HTTPS on loopback, pagination, filtering, hypermedia, OAuth or extra flat error fields to game the generic score.",
+    "Full-album arrays are intentionally unpaginated. Static public album manifests are fetched once and cached; initial 36-photo rendering is the requested frontend contract, not proof of runtime implementation or server pagination.",
+    "The checker does not resolve referenced response descriptions/schemas; it also expects at least two flat error properties, while the requested envelope is {error:{code,message}}. Its security coverage check counts security:[] as secured; that is not evidence that the session bootstrap is safe.",
+    "Export completion is synchronous in the specified utilities contract. No job polling, telemetry, provider deployment, or verified long-running export resilience is claimed.",
+    "No runtime auth/Origin/Host/media guard, privacy export, original-byte hash, or deployment tests were run by this documentation reviewer. Concurrent source integration must verify these."
+  ]
+}

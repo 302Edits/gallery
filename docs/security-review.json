@@ -1,0 +1,1281 @@
+{
+  "status": "scoped-local-verification-complete-public-launch-conditional",
+  "scope": "Private computer-only manager and static-publication trust boundaries",
+  "createdFiles": [
+    "backend/tests/security.test.js",
+    "docs/threat-model.md",
+    "docs/security-review.json"
+  ],
+  "sourceMutations": false,
+  "commits": false,
+  "liveProviderVerification": false,
+  "independentBackupsVerified": false,
+  "testRun": {
+    "command": "npm test",
+    "cwd": "backend",
+    "exitCode": 0,
+    "total": 59,
+    "pass": 59,
+    "fail": 0,
+    "skipped": 0,
+    "securityCountedCases": 51,
+    "mainIntegrationCases": 8,
+    "failedAssertions": 0,
+    "sourceDefects": [],
+    "resolvedDefects": [
+      {
+        "id": "T09",
+        "case": "invalid covers on album creation are not silently accepted",
+        "observedStatus": 400,
+        "fixOwner": "Main implementer"
+      },
+      {
+        "id": "T08",
+        "cases": [
+          "__proto__",
+          "constructor",
+          "toString"
+        ],
+        "observedStatus": 404,
+        "fixOwner": "Main implementer"
+      }
+    ]
+  },
+  "limitations": [
+    "No live provider deployment, SLO or provider permissions check",
+    "No independent original backup or operator restore drill",
+    "No 100+ MiB, pixel-bomb, disk-full, symlink-race or disconnect/concurrency stress run",
+    "Exporter fixture is not a real frontend build or CDN access-policy check",
+    "Public originals may retain GPS; actual rights and publication safety unverified"
+  ],
+  "toolApplicability": {
+    "threatModeler": "Keyword-driven suggestions; DREAD heuristic; --assets parsed but not used to specialize results",
+    "highDreadMitigationOwners": [
+      {
+        "component": "owner-browser",
+        "threat": "Credential Theft",
+        "score": 8.2,
+        "owner": "Backend maintainer + Site owner",
+        "registerIds": [
+          "T01",
+          "T02"
+        ],
+        "tests": [
+          "owner API reads and writes require a valid process-scoped bearer token",
+          "session and authenticated API reject rebinding and cross-site browser requests"
+        ]
+      },
+      {
+        "component": "loopback-process",
+        "threat": "API Key Impersonation",
+        "score": 7.2,
+        "owner": "Backend maintainer + Site owner",
+        "registerIds": [
+          "T02"
+        ],
+        "tests": [
+          "owner API reads and writes require a valid process-scoped bearer token"
+        ]
+      },
+      {
+        "component": "publishing-flow",
+        "threat": "API Key Impersonation",
+        "score": 7.2,
+        "owner": "Backend maintainer + Site owner",
+        "registerIds": [
+          "T02",
+          "T04"
+        ],
+        "tests": [
+          "owner API reads and writes require a valid process-scoped bearer token",
+          "public export excludes drafts, local paths, owner token and private database"
+        ]
+      }
+    ],
+    "verificationGate": "Complete for scoped local test-and-tool review after T08/T09 source fixes; operator/deployment/content-permission checks remain unverified.",
+    "extensionCoverage": "Stock scanner ignores .jsx/.mjs. Eight affected files re-scanned with an in-memory extension allowlist adapter; regexes unchanged and no skill source edited."
+  },
+  "modelTool": [
+    {
+      "id": "owner-browser",
+      "exitCode": 0,
+      "command": [
+        "python3",
+        "threat_modeler.py",
+        "--component",
+        "User Authentication: Owner browser",
+        "--assets",
+        "local_session,owner_actions",
+        "--json"
+      ],
+      "report": {
+        "component": "User Authentication: Owner browser",
+        "analysis_date": "2026-09-17T13:37:59.892509",
+        "summary": {
+          "total_threats": 7,
+          "by_risk_level": {
+            "critical": 1,
+            "high": 3,
+            "medium": 3,
+            "low": 0
+          }
+        },
+        "threats": [
+          {
+            "category": "Spoofing",
+            "name": "Credential Theft",
+            "description": "Attacker obtains valid credentials through phishing or theft",
+            "attack_vector": "Phishing emails, keyloggers, credential stuffing",
+            "impact": "Full account compromise, data access",
+            "likelihood": 4,
+            "severity": 5,
+            "risk_score": 20,
+            "risk_level": "Critical",
+            "dread": {
+              "damage": 10,
+              "reproducibility": 8,
+              "exploitability": 8,
+              "affected_users": 8,
+              "discoverability": 7,
+              "total": 8.2
+            },
+            "mitigations": [
+              "Implement multi-factor authentication (MFA)",
+              "Use phishing-resistant authentication (FIDO2/WebAuthn)",
+              "Deploy credential monitoring and breach detection",
+              "Enforce strong password policies with complexity requirements"
+            ]
+          },
+          {
+            "category": "Tampering",
+            "name": "JWT Token Manipulation",
+            "description": "Attacker modifies JWT claims or signature",
+            "attack_vector": "Algorithm confusion, weak secrets, none algorithm",
+            "impact": "Privilege escalation, identity spoofing",
+            "likelihood": 3,
+            "severity": 5,
+            "risk_score": 15,
+            "risk_level": "High",
+            "dread": {
+              "damage": 10,
+              "reproducibility": 5,
+              "exploitability": 6,
+              "affected_users": 5,
+              "discoverability": 7,
+              "total": 6.6
+            },
+            "mitigations": [
+              "Use asymmetric algorithms (RS256, ES256)",
+              "Validate algorithm in code, not from token",
+              "Implement proper key management",
+              "Add expiration and audience validation"
+            ]
+          },
+          {
+            "category": "Spoofing",
+            "name": "Session Hijacking",
+            "description": "Attacker steals or predicts session tokens",
+            "attack_vector": "XSS, network sniffing, session fixation",
+            "impact": "Unauthorized access to user session",
+            "likelihood": 3,
+            "severity": 4,
+            "risk_score": 12,
+            "risk_level": "High",
+            "dread": {
+              "damage": 8,
+              "reproducibility": 5,
+              "exploitability": 6,
+              "affected_users": 5,
+              "discoverability": 7,
+              "total": 6.2
+            },
+            "mitigations": [
+              "Use secure, HttpOnly, SameSite cookies",
+              "Implement session binding (IP, user agent)",
+              "Rotate session tokens after authentication",
+              "Use short session timeouts for sensitive operations"
+            ]
+          },
+          {
+            "category": "Denial of Service",
+            "name": "Authentication Brute Force",
+            "description": "Attacker overwhelms authentication service",
+            "attack_vector": "Distributed credential stuffing, password spraying",
+            "impact": "Service unavailability, account lockouts",
+            "likelihood": 4,
+            "severity": 3,
+            "risk_score": 12,
+            "risk_level": "High",
+            "dread": {
+              "damage": 6,
+              "reproducibility": 8,
+              "exploitability": 8,
+              "affected_users": 5,
+              "discoverability": 7,
+              "total": 6.8
+            },
+            "mitigations": [
+              "Implement progressive rate limiting",
+              "Use CAPTCHA after failed attempts",
+              "Deploy account lockout with notification",
+              "Use distributed denial of service protection"
+            ]
+          },
+          {
+            "category": "Information Disclosure",
+            "name": "Password Hash Exposure",
+            "description": "Password hashes leaked through breach or injection",
+            "attack_vector": "SQL injection, backup exposure, insider threat",
+            "impact": "Mass credential compromise",
+            "likelihood": 2,
+            "severity": 5,
+            "risk_score": 10,
+            "risk_level": "Medium",
+            "dread": {
+              "damage": 10,
+              "reproducibility": 5,
+              "exploitability": 4,
+              "affected_users": 8,
+              "discoverability": 4,
+              "total": 6.2
+            },
+            "mitigations": [
+              "Use strong password hashing (Argon2id, bcrypt)",
+              "Implement database encryption at rest",
+              "Apply parameterized queries everywhere",
+              "Segment database access by function"
+            ]
+          },
+          {
+            "category": "Elevation of Privilege",
+            "name": "Privilege Escalation via Auth Bypass",
+            "description": "Attacker gains admin access through auth flaws",
+            "attack_vector": "IDOR, insecure direct object references, role confusion",
+            "impact": "Full system compromise",
+            "likelihood": 2,
+            "severity": 5,
+            "risk_score": 10,
+            "risk_level": "Medium",
+            "dread": {
+              "damage": 10,
+              "reproducibility": 5,
+              "exploitability": 4,
+              "affected_users": 8,
+              "discoverability": 4,
+              "total": 6.2
+            },
+            "mitigations": [
+              "Implement server-side authorization checks",
+              "Use role-based access control (RBAC)",
+              "Validate permissions on every request",
+              "Audit privilege changes"
+            ]
+          },
+          {
+            "category": "Repudiation",
+            "name": "Authentication Event Denial",
+            "description": "User denies performing authentication actions",
+            "attack_vector": "Claim of compromised credentials",
+            "impact": "Dispute resolution difficulty, fraud",
+            "likelihood": 2,
+            "severity": 3,
+            "risk_score": 6,
+            "risk_level": "Medium",
+            "dread": {
+              "damage": 6,
+              "reproducibility": 5,
+              "exploitability": 4,
+              "affected_users": 5,
+              "discoverability": 4,
+              "total": 4.8
+            },
+            "mitigations": [
+              "Log all authentication events with timestamps",
+              "Capture device fingerprints and IP addresses",
+              "Implement tamper-evident audit logs",
+              "Use digital signatures for critical actions"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "loopback-process",
+      "exitCode": 0,
+      "command": [
+        "python3",
+        "threat_modeler.py",
+        "--component",
+        "API: Loopback process",
+        "--assets",
+        "draft_images,owner_token",
+        "--json"
+      ],
+      "report": {
+        "component": "API: Loopback process",
+        "analysis_date": "2026-09-17T13:37:59.923688",
+        "summary": {
+          "total_threats": 4,
+          "by_risk_level": {
+            "critical": 0,
+            "high": 2,
+            "medium": 2,
+            "low": 0
+          }
+        },
+        "threats": [
+          {
+            "category": "Spoofing",
+            "name": "API Key Impersonation",
+            "description": "Attacker uses stolen or leaked API keys",
+            "attack_vector": "GitHub exposure, client-side storage, logging",
+            "impact": "Unauthorized API access, data theft",
+            "likelihood": 4,
+            "severity": 4,
+            "risk_score": 16,
+            "risk_level": "High",
+            "dread": {
+              "damage": 8,
+              "reproducibility": 8,
+              "exploitability": 8,
+              "affected_users": 5,
+              "discoverability": 7,
+              "total": 7.2
+            },
+            "mitigations": [
+              "Implement API key rotation policies",
+              "Use short-lived tokens where possible",
+              "Monitor for exposed secrets in repositories",
+              "Implement IP allowlisting for API keys"
+            ]
+          },
+          {
+            "category": "Information Disclosure",
+            "name": "Excessive Data Exposure",
+            "description": "API returns more data than needed",
+            "attack_vector": "Response inspection, schema analysis",
+            "impact": "Sensitive data leakage",
+            "likelihood": 4,
+            "severity": 3,
+            "risk_score": 12,
+            "risk_level": "High",
+            "dread": {
+              "damage": 6,
+              "reproducibility": 8,
+              "exploitability": 8,
+              "affected_users": 5,
+              "discoverability": 7,
+              "total": 6.8
+            },
+            "mitigations": [
+              "Implement field-level access control",
+              "Use GraphQL with depth limiting",
+              "Apply response filtering based on role",
+              "Audit API responses for sensitive fields"
+            ]
+          },
+          {
+            "category": "Denial of Service",
+            "name": "API Rate Limit Bypass",
+            "description": "Attacker circumvents rate limiting",
+            "attack_vector": "Distributed requests, header spoofing",
+            "impact": "Service degradation, resource exhaustion",
+            "likelihood": 3,
+            "severity": 3,
+            "risk_score": 9,
+            "risk_level": "Medium",
+            "dread": {
+              "damage": 6,
+              "reproducibility": 5,
+              "exploitability": 6,
+              "affected_users": 5,
+              "discoverability": 7,
+              "total": 5.8
+            },
+            "mitigations": [
+              "Implement layered rate limiting",
+              "Use token bucket or leaky bucket algorithms",
+              "Rate limit by user, IP, and API key",
+              "Deploy API gateway with DoS protection"
+            ]
+          },
+          {
+            "category": "Tampering",
+            "name": "Request Manipulation",
+            "description": "Attacker modifies API requests in transit",
+            "attack_vector": "Man-in-the-middle, proxy interception",
+            "impact": "Data corruption, unauthorized actions",
+            "likelihood": 2,
+            "severity": 4,
+            "risk_score": 8,
+            "risk_level": "Medium",
+            "dread": {
+              "damage": 8,
+              "reproducibility": 5,
+              "exploitability": 4,
+              "affected_users": 5,
+              "discoverability": 4,
+              "total": 5.2
+            },
+            "mitigations": [
+              "Enforce TLS 1.3 for all connections",
+              "Implement request signing (HMAC)",
+              "Use certificate pinning for mobile apps",
+              "Validate request integrity on server"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "sqlite",
+      "exitCode": 0,
+      "command": [
+        "python3",
+        "threat_modeler.py",
+        "--component",
+        "Database: SQLite",
+        "--assets",
+        "album_metadata,draft_metadata",
+        "--json"
+      ],
+      "report": {
+        "component": "Database: SQLite",
+        "analysis_date": "2026-09-17T13:37:59.954277",
+        "summary": {
+          "total_threats": 3,
+          "by_risk_level": {
+            "critical": 0,
+            "high": 1,
+            "medium": 2,
+            "low": 0
+          }
+        },
+        "threats": [
+          {
+            "category": "Tampering",
+            "name": "SQL Injection",
+            "description": "Attacker injects malicious SQL commands",
+            "attack_vector": "Input fields, URL parameters, headers",
+            "impact": "Data theft, modification, destruction",
+            "likelihood": 3,
+            "severity": 5,
+            "risk_score": 15,
+            "risk_level": "High",
+            "dread": {
+              "damage": 10,
+              "reproducibility": 5,
+              "exploitability": 6,
+              "affected_users": 5,
+              "discoverability": 7,
+              "total": 6.6
+            },
+            "mitigations": [
+              "Use parameterized queries exclusively",
+              "Apply input validation and sanitization",
+              "Implement least privilege database accounts",
+              "Deploy web application firewall (WAF)"
+            ]
+          },
+          {
+            "category": "Information Disclosure",
+            "name": "Unencrypted Data at Rest",
+            "description": "Sensitive data stored without encryption",
+            "attack_vector": "Physical theft, backup exposure, insider threat",
+            "impact": "Mass data breach",
+            "likelihood": 2,
+            "severity": 5,
+            "risk_score": 10,
+            "risk_level": "Medium",
+            "dread": {
+              "damage": 10,
+              "reproducibility": 5,
+              "exploitability": 4,
+              "affected_users": 8,
+              "discoverability": 4,
+              "total": 6.2
+            },
+            "mitigations": [
+              "Implement transparent data encryption (TDE)",
+              "Use field-level encryption for PII",
+              "Encrypt database backups",
+              "Manage encryption keys securely"
+            ]
+          },
+          {
+            "category": "Repudiation",
+            "name": "Audit Log Tampering",
+            "description": "Attacker modifies or deletes database logs",
+            "attack_vector": "SQL injection, admin access, log rotation",
+            "impact": "Cannot prove what actions occurred",
+            "likelihood": 2,
+            "severity": 4,
+            "risk_score": 8,
+            "risk_level": "Medium",
+            "dread": {
+              "damage": 8,
+              "reproducibility": 5,
+              "exploitability": 4,
+              "affected_users": 5,
+              "discoverability": 4,
+              "total": 5.2
+            },
+            "mitigations": [
+              "Write audit logs to immutable storage",
+              "Implement cryptographic log chaining",
+              "Use separate audit database with restricted access",
+              "Monitor for log gaps and anomalies"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "filesystem",
+      "exitCode": 0,
+      "command": [
+        "python3",
+        "threat_modeler.py",
+        "--component",
+        "Storage: Filesystem",
+        "--assets",
+        "unchanged_originals,backups,previews",
+        "--json"
+      ],
+      "report": {
+        "component": "Storage: Filesystem",
+        "analysis_date": "2026-09-17T13:37:59.984606",
+        "summary": {
+          "total_threats": 2,
+          "by_risk_level": {
+            "critical": 0,
+            "high": 1,
+            "medium": 1,
+            "low": 0
+          }
+        },
+        "threats": [
+          {
+            "category": "Information Disclosure",
+            "name": "Insecure File Upload",
+            "description": "Attacker accesses uploaded files",
+            "attack_vector": "Direct URL access, path traversal",
+            "impact": "Data breach, malware distribution",
+            "likelihood": 3,
+            "severity": 4,
+            "risk_score": 12,
+            "risk_level": "High",
+            "dread": {
+              "damage": 8,
+              "reproducibility": 5,
+              "exploitability": 6,
+              "affected_users": 5,
+              "discoverability": 7,
+              "total": 6.2
+            },
+            "mitigations": [
+              "Generate random file names",
+              "Store files outside web root",
+              "Implement signed URLs with expiration",
+              "Scan uploads for malware"
+            ]
+          },
+          {
+            "category": "Tampering",
+            "name": "File Integrity Violation",
+            "description": "Attacker modifies stored files",
+            "attack_vector": "Write access exploit, supply chain attack",
+            "impact": "Data corruption, code execution",
+            "likelihood": 2,
+            "severity": 4,
+            "risk_score": 8,
+            "risk_level": "Medium",
+            "dread": {
+              "damage": 8,
+              "reproducibility": 5,
+              "exploitability": 4,
+              "affected_users": 5,
+              "discoverability": 4,
+              "total": 5.2
+            },
+            "mitigations": [
+              "Implement file integrity monitoring",
+              "Use cryptographic hashes for verification",
+              "Apply immutable storage for critical files",
+              "Version control with audit trail"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "public-manifest",
+      "exitCode": 0,
+      "command": [
+        "python3",
+        "threat_modeler.py",
+        "--component",
+        "CDN: Public manifest",
+        "--assets",
+        "published_metadata,public_originals",
+        "--json"
+      ],
+      "report": {
+        "component": "CDN: Public manifest",
+        "analysis_date": "2026-09-17T13:38:00.015540",
+        "summary": {
+          "total_threats": 2,
+          "by_risk_level": {
+            "critical": 0,
+            "high": 1,
+            "medium": 1,
+            "low": 0
+          }
+        },
+        "threats": [
+          {
+            "category": "Denial of Service",
+            "name": "DDoS Attack",
+            "description": "Attacker floods network with traffic",
+            "attack_vector": "Volumetric attacks, application layer attacks",
+            "impact": "Complete service unavailability",
+            "likelihood": 3,
+            "severity": 4,
+            "risk_score": 12,
+            "risk_level": "High",
+            "dread": {
+              "damage": 8,
+              "reproducibility": 5,
+              "exploitability": 6,
+              "affected_users": 5,
+              "discoverability": 7,
+              "total": 6.2
+            },
+            "mitigations": [
+              "Deploy CDN with DDoS protection",
+              "Implement rate limiting at edge",
+              "Use anycast DNS distribution",
+              "Have incident response runbook ready"
+            ]
+          },
+          {
+            "category": "Information Disclosure",
+            "name": "Network Traffic Interception",
+            "description": "Attacker captures unencrypted traffic",
+            "attack_vector": "ARP spoofing, rogue access points, packet sniffing",
+            "impact": "Credential theft, data exposure",
+            "likelihood": 2,
+            "severity": 4,
+            "risk_score": 8,
+            "risk_level": "Medium",
+            "dread": {
+              "damage": 8,
+              "reproducibility": 5,
+              "exploitability": 4,
+              "affected_users": 5,
+              "discoverability": 4,
+              "total": 5.2
+            },
+            "mitigations": [
+              "Enforce TLS everywhere (no HTTP)",
+              "Implement HSTS with preloading",
+              "Use mutual TLS for service-to-service",
+              "Deploy network segmentation"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "publishing-flow",
+      "exitCode": 0,
+      "command": [
+        "python3",
+        "threat_modeler.py",
+        "--component",
+        "API: Publishing flow",
+        "--assets",
+        "publication_snapshot,export_integrity",
+        "--json"
+      ],
+      "report": {
+        "component": "API: Publishing flow",
+        "analysis_date": "2026-09-17T13:38:00.045597",
+        "summary": {
+          "total_threats": 4,
+          "by_risk_level": {
+            "critical": 0,
+            "high": 2,
+            "medium": 2,
+            "low": 0
+          }
+        },
+        "threats": [
+          {
+            "category": "Spoofing",
+            "name": "API Key Impersonation",
+            "description": "Attacker uses stolen or leaked API keys",
+            "attack_vector": "GitHub exposure, client-side storage, logging",
+            "impact": "Unauthorized API access, data theft",
+            "likelihood": 4,
+            "severity": 4,
+            "risk_score": 16,
+            "risk_level": "High",
+            "dread": {
+              "damage": 8,
+              "reproducibility": 8,
+              "exploitability": 8,
+              "affected_users": 5,
+              "discoverability": 7,
+              "total": 7.2
+            },
+            "mitigations": [
+              "Implement API key rotation policies",
+              "Use short-lived tokens where possible",
+              "Monitor for exposed secrets in repositories",
+              "Implement IP allowlisting for API keys"
+            ]
+          },
+          {
+            "category": "Information Disclosure",
+            "name": "Excessive Data Exposure",
+            "description": "API returns more data than needed",
+            "attack_vector": "Response inspection, schema analysis",
+            "impact": "Sensitive data leakage",
+            "likelihood": 4,
+            "severity": 3,
+            "risk_score": 12,
+            "risk_level": "High",
+            "dread": {
+              "damage": 6,
+              "reproducibility": 8,
+              "exploitability": 8,
+              "affected_users": 5,
+              "discoverability": 7,
+              "total": 6.8
+            },
+            "mitigations": [
+              "Implement field-level access control",
+              "Use GraphQL with depth limiting",
+              "Apply response filtering based on role",
+              "Audit API responses for sensitive fields"
+            ]
+          },
+          {
+            "category": "Denial of Service",
+            "name": "API Rate Limit Bypass",
+            "description": "Attacker circumvents rate limiting",
+            "attack_vector": "Distributed requests, header spoofing",
+            "impact": "Service degradation, resource exhaustion",
+            "likelihood": 3,
+            "severity": 3,
+            "risk_score": 9,
+            "risk_level": "Medium",
+            "dread": {
+              "damage": 6,
+              "reproducibility": 5,
+              "exploitability": 6,
+              "affected_users": 5,
+              "discoverability": 7,
+              "total": 5.8
+            },
+            "mitigations": [
+              "Implement layered rate limiting",
+              "Use token bucket or leaky bucket algorithms",
+              "Rate limit by user, IP, and API key",
+              "Deploy API gateway with DoS protection"
+            ]
+          },
+          {
+            "category": "Tampering",
+            "name": "Request Manipulation",
+            "description": "Attacker modifies API requests in transit",
+            "attack_vector": "Man-in-the-middle, proxy interception",
+            "impact": "Data corruption, unauthorized actions",
+            "likelihood": 2,
+            "severity": 4,
+            "risk_score": 8,
+            "risk_level": "Medium",
+            "dread": {
+              "damage": 8,
+              "reproducibility": 5,
+              "exploitability": 4,
+              "affected_users": 5,
+              "discoverability": 4,
+              "total": 5.2
+            },
+            "mitigations": [
+              "Enforce TLS 1.3 for all connections",
+              "Implement request signing (HMAC)",
+              "Use certificate pinning for mobile apps",
+              "Validate request integrity on server"
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "secretScanner": {
+    "minimumSeverity": "high",
+    "exclusions": [
+      "dependencies",
+      "build output",
+      "photos and image assets",
+      "live databases/backups",
+      "environment secrets",
+      "legacy duplicate backend/frontend scaffold"
+    ],
+    "runs": [
+      {
+        "file": "backend/index.js",
+        "sourceSha256": "833c52ffc9bc7349b1b04d29b5a8598f296ab5b4a5b442f40d6e7ada38150559",
+        "exitCode": 0,
+        "extensionAdapter": false,
+        "report": {
+          "target": "backend/index.js",
+          "scan_date": "2026-09-17T13:38:00.081772",
+          "summary": {
+            "total": 0,
+            "by_severity": {
+              "critical": 0,
+              "high": 0,
+              "medium": 0,
+              "low": 0
+            }
+          },
+          "findings": []
+        }
+      },
+      {
+        "file": "backend/database.js",
+        "sourceSha256": "ee413b1ba8c0f3e94e9ff96f127ced42201e954a52229dc66601e76d1bfab463",
+        "exitCode": 0,
+        "extensionAdapter": false,
+        "report": {
+          "target": "backend/database.js",
+          "scan_date": "2026-09-17T13:38:00.116538",
+          "summary": {
+            "total": 0,
+            "by_severity": {
+              "critical": 0,
+              "high": 0,
+              "medium": 0,
+              "low": 0
+            }
+          },
+          "findings": []
+        }
+      },
+      {
+        "file": "backend/images.js",
+        "sourceSha256": "8dd17aa74b6c4040e47ec72aa3c284c3864d8e7d48eaec9852297f4a86da8b75",
+        "exitCode": 0,
+        "extensionAdapter": false,
+        "report": {
+          "target": "backend/images.js",
+          "scan_date": "2026-09-17T13:38:00.150847",
+          "summary": {
+            "total": 0,
+            "by_severity": {
+              "critical": 0,
+              "high": 0,
+              "medium": 0,
+              "low": 0
+            }
+          },
+          "findings": []
+        }
+      },
+      {
+        "file": "backend/export-site.js",
+        "sourceSha256": "97dec87a09c139542db7fe49e051c724ed53bf82eff373b4105bc5282fac068b",
+        "exitCode": 0,
+        "extensionAdapter": false,
+        "report": {
+          "target": "backend/export-site.js",
+          "scan_date": "2026-09-17T13:38:00.186229",
+          "summary": {
+            "total": 0,
+            "by_severity": {
+              "critical": 0,
+              "high": 0,
+              "medium": 0,
+              "low": 0
+            }
+          },
+          "findings": []
+        }
+      },
+      {
+        "file": "backend/package.json",
+        "sourceSha256": "dae9f0f6931efcd4afe9486d5b847036967b8c99d351df45a5e11fe4ecb8975d",
+        "exitCode": 0,
+        "extensionAdapter": false,
+        "report": {
+          "target": "backend/package.json",
+          "scan_date": "2026-09-17T13:38:00.220367",
+          "summary": {
+            "total": 0,
+            "by_severity": {
+              "critical": 0,
+              "high": 0,
+              "medium": 0,
+              "low": 0
+            }
+          },
+          "findings": []
+        }
+      },
+      {
+        "file": "backend/tests/security.test.js",
+        "sourceSha256": "3eff2fcd4683dc204d95b157d6785230eb0c87ad6d91119c5360fdd663720616",
+        "exitCode": 0,
+        "extensionAdapter": false,
+        "report": {
+          "target": "backend/tests/security.test.js",
+          "scan_date": "2026-09-17T13:38:00.256990",
+          "summary": {
+            "total": 0,
+            "by_severity": {
+              "critical": 0,
+              "high": 0,
+              "medium": 0,
+              "low": 0
+            }
+          },
+          "findings": []
+        }
+      },
+      {
+        "file": "frontend/src/App.jsx",
+        "sourceSha256": "ead5eec41b2591aaeadcd1be9dc6715892678ef4971dfaf109fd93410c4e05fe",
+        "exitCode": 0,
+        "extensionAdapter": true,
+        "report": {
+          "target": "frontend/src/App.jsx",
+          "scan_date": "2026-09-17T13:38:00.291863",
+          "summary": {
+            "total": 0,
+            "by_severity": {
+              "critical": 0,
+              "high": 0,
+              "medium": 0,
+              "low": 0
+            }
+          },
+          "findings": []
+        }
+      },
+      {
+        "file": "frontend/src/main.jsx",
+        "sourceSha256": "4b4b864dbe45253425d0c925337180ec07e204295179f80f59551216f466f618",
+        "exitCode": 0,
+        "extensionAdapter": true,
+        "report": {
+          "target": "frontend/src/main.jsx",
+          "scan_date": "2026-09-17T13:38:00.326869",
+          "summary": {
+            "total": 0,
+            "by_severity": {
+              "critical": 0,
+              "high": 0,
+              "medium": 0,
+              "low": 0
+            }
+          },
+          "findings": []
+        }
+      },
+      {
+        "file": "frontend/src/utils/api.js",
+        "sourceSha256": "3f40d7235ec7fbc20c98d92b462b83a457f99c6c90f561e9699cb78587f5f866",
+        "exitCode": 0,
+        "extensionAdapter": false,
+        "report": {
+          "target": "frontend/src/utils/api.js",
+          "scan_date": "2026-09-17T13:38:00.361783",
+          "summary": {
+            "total": 0,
+            "by_severity": {
+              "critical": 0,
+              "high": 0,
+              "medium": 0,
+              "low": 0
+            }
+          },
+          "findings": []
+        }
+      },
+      {
+        "file": "frontend/src/utils/themes.js",
+        "sourceSha256": "7cfdb3ec4c4995520a5ab92078afa7b3d4748256e5192d855b3a9f899950f012",
+        "exitCode": 0,
+        "extensionAdapter": false,
+        "report": {
+          "target": "frontend/src/utils/themes.js",
+          "scan_date": "2026-09-17T13:38:00.396410",
+          "summary": {
+            "total": 0,
+            "by_severity": {
+              "critical": 0,
+              "high": 0,
+              "medium": 0,
+              "low": 0
+            }
+          },
+          "findings": []
+        }
+      },
+      {
+        "file": "frontend/src/utils/downloads.js",
+        "sourceSha256": "12d8134a0e8e0e0ff777e0aa9357e2cf7b1d1881a930dcd0132b1af97609de32",
+        "exitCode": 0,
+        "extensionAdapter": false,
+        "report": {
+          "target": "frontend/src/utils/downloads.js",
+          "scan_date": "2026-09-17T13:38:00.431121",
+          "summary": {
+            "total": 0,
+            "by_severity": {
+              "critical": 0,
+              "high": 0,
+              "medium": 0,
+              "low": 0
+            }
+          },
+          "findings": []
+        }
+      },
+      {
+        "file": "frontend/src/components/Gallery.jsx",
+        "sourceSha256": "c6cac966fed29c78f835b8b0a5cf006d090133ce4c2ceb7a938c96aa8cca28b2",
+        "exitCode": 0,
+        "extensionAdapter": true,
+        "report": {
+          "target": "frontend/src/components/Gallery.jsx",
+          "scan_date": "2026-09-17T13:38:00.471104",
+          "summary": {
+            "total": 0,
+            "by_severity": {
+              "critical": 0,
+              "high": 0,
+              "medium": 0,
+              "low": 0
+            }
+          },
+          "findings": []
+        }
+      },
+      {
+        "file": "frontend/src/components/AlbumEditor.jsx",
+        "sourceSha256": "1fd738b08e9cb1ad200c8d346dcd70df4e549be6bac37c8afb7d29b86e7274a6",
+        "exitCode": 0,
+        "extensionAdapter": true,
+        "report": {
+          "target": "frontend/src/components/AlbumEditor.jsx",
+          "scan_date": "2026-09-17T13:38:00.507822",
+          "summary": {
+            "total": 0,
+            "by_severity": {
+              "critical": 0,
+              "high": 0,
+              "medium": 0,
+              "low": 0
+            }
+          },
+          "findings": []
+        }
+      },
+      {
+        "file": "frontend/src/components/Lightbox.jsx",
+        "sourceSha256": "29920ed1784c8ce5d57cd57f7fdc1054bac38bb8c28bce411fde5df5706c6e79",
+        "exitCode": 0,
+        "extensionAdapter": true,
+        "report": {
+          "target": "frontend/src/components/Lightbox.jsx",
+          "scan_date": "2026-09-17T13:38:00.542875",
+          "summary": {
+            "total": 0,
+            "by_severity": {
+              "critical": 0,
+              "high": 0,
+              "medium": 0,
+              "low": 0
+            }
+          },
+          "findings": []
+        }
+      },
+      {
+        "file": "frontend/src/components/UploadModal.jsx",
+        "sourceSha256": "d61251ac9b9f10c00e0d1d8097dbe448601a24aa77b6fa2a26b14aa5484a6b39",
+        "exitCode": 0,
+        "extensionAdapter": true,
+        "report": {
+          "target": "frontend/src/components/UploadModal.jsx",
+          "scan_date": "2026-09-17T13:38:00.582413",
+          "summary": {
+            "total": 0,
+            "by_severity": {
+              "critical": 0,
+              "high": 0,
+              "medium": 0,
+              "low": 0
+            }
+          },
+          "findings": []
+        }
+      },
+      {
+        "file": "frontend/vite.config.js",
+        "sourceSha256": "d03e677ab422f041783dec9bfe5474274b0b67a0bd9b7116102e3cefc3af83da",
+        "exitCode": 0,
+        "extensionAdapter": false,
+        "report": {
+          "target": "frontend/vite.config.js",
+          "scan_date": "2026-09-17T13:38:00.616556",
+          "summary": {
+            "total": 0,
+            "by_severity": {
+              "critical": 0,
+              "high": 0,
+              "medium": 0,
+              "low": 0
+            }
+          },
+          "findings": []
+        }
+      },
+      {
+        "file": "frontend/package.json",
+        "sourceSha256": "11f29c9ea66c399ce5f5123e0238683aba204e80108fa4f7de35e9f4ad47d070",
+        "exitCode": 0,
+        "extensionAdapter": false,
+        "report": {
+          "target": "frontend/package.json",
+          "scan_date": "2026-09-17T13:38:00.650522",
+          "summary": {
+            "total": 0,
+            "by_severity": {
+              "critical": 0,
+              "high": 0,
+              "medium": 0,
+              "low": 0
+            }
+          },
+          "findings": []
+        }
+      },
+      {
+        "file": "package.json",
+        "sourceSha256": "d9b5160a93d5defae394b354c326e451cff0fe35e94f4826f5e5f9187d3e0f02",
+        "exitCode": 0,
+        "extensionAdapter": false,
+        "report": {
+          "target": "package.json",
+          "scan_date": "2026-09-17T13:38:00.685093",
+          "summary": {
+            "total": 0,
+            "by_severity": {
+              "critical": 0,
+              "high": 0,
+              "medium": 0,
+              "low": 0
+            }
+          },
+          "findings": []
+        }
+      },
+      {
+        "file": "scripts/dev.mjs",
+        "sourceSha256": "85a75c5b8cdb9755a6b9785ed1af7bc7f817e12f40dc66e383593679c9d88fc0",
+        "exitCode": 0,
+        "extensionAdapter": true,
+        "report": {
+          "target": "scripts/dev.mjs",
+          "scan_date": "2026-09-17T13:38:00.723743",
+          "summary": {
+            "total": 0,
+            "by_severity": {
+              "critical": 0,
+              "high": 0,
+              "medium": 0,
+              "low": 0
+            }
+          },
+          "findings": []
+        }
+      },
+      {
+        "file": "scripts/preview.mjs",
+        "sourceSha256": "0153c22d0f214e7fc2ca8ff09e32fa6b34f8c72f16b2c81dbcf2ce8c69db9db3",
+        "exitCode": 0,
+        "extensionAdapter": true,
+        "report": {
+          "target": "scripts/preview.mjs",
+          "scan_date": "2026-09-17T13:38:00.759043",
+          "summary": {
+            "total": 0,
+            "by_severity": {
+              "critical": 0,
+              "high": 0,
+              "medium": 0,
+              "low": 0
+            }
+          },
+          "findings": []
+        }
+      }
+    ],
+    "extensionAdapter": "Supplied scanner loaded with runpy; .jsx/.mjs added to pattern file_extensions in memory only. Unmodified regexes and CLI main; skill files not edited."
+  },
+  "initialTestRun": {
+    "command": "node --test tests/security.test.js",
+    "cwd": "backend",
+    "exitCode": 1,
+    "total": 51,
+    "pass": 46,
+    "fail": 5,
+    "skipped": 0,
+    "failedAssertions": 4,
+    "sourceDefects": [
+      {
+        "id": "T09",
+        "expectedStatus": 400,
+        "actualStatus": 201,
+        "case": "invalid covers on album creation are not silently accepted"
+      },
+      {
+        "id": "T08",
+        "expectedStatus": 404,
+        "actualStatus": 500,
+        "cases": [
+          "__proto__",
+          "constructor",
+          "toString"
+        ]
+      }
+    ],
+    "note": "Node includes failed media parent in failure count; no failing test was skipped."
+  },
+  "browserEvidence": {
+    "source": "Main's report",
+    "independentlyRerunByThisBranch": false,
+    "reportedPass": 10,
+    "reportedCoverage": [
+      "public no owner API",
+      "theme no-refetch and selection",
+      "viewer focus",
+      "multiple-photo ZIP hashes with duplicate filenames",
+      "desktop batch upload"
+    ]
+  },
+  "publicationPathVerification": {
+    "manifestOriginalPath": "/originals/{id}.{extension}",
+    "hardcodedLegacyOriginalPathInSecurityTests": false,
+    "rerunCommand": "npm test --prefix backend",
+    "total": 59,
+    "pass": 59,
+    "fail": 0
+  }
+}

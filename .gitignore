@@ -1,0 +1,39 @@
+# Dependencies and generated build files
+node_modules/
+dist/
+dist-public/
+coverage/
+playwright-report/
+test-results/
+frontend/public/api/zonerama/
+frontend/public/.nojekyll
+
+# Local credentials and environment configuration
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Private local photo collection and databases
+backend/uploads/
+backend/data/
+site-output/
+site-output-previous-*/
+.publish-staging-*/
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# Package-manager caches and operating-system files
+.npm-cache/
+.DS_Store
+*.log
+.agenthub/
+.claude/
+.taste-skill/
+AGENTS.md
+CLAUDE.md
+backend/frontend/
+frontend/src/components/Gallery.jsx`

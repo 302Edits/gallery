@@ -1,0 +1,26 @@
+{
+  "name": "sideline-photo-gallery",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "start": "node scripts/dev.mjs",
+    "build": "npm run build:public --workspace frontend",
+    "test": "npm test --workspace backend",
+    "lint": "npm run lint --workspace frontend",
+    "export": "node backend/publish.js",
+    "preview": "node scripts/preview.mjs",
+    "snapshot:zonerama": "node scripts/snapshot-zonerama.mjs",
+    "test:browser": "playwright test",
+    "benchmark": "node scripts/benchmark.mjs",
+    "deploy": "npx wrangler pages deploy site-output",
+    "verify": "npm test && npm run lint && npm run build && npm run test:browser"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0"
+  }
+}

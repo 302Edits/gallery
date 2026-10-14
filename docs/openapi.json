@@ -1,0 +1,1696 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Sports Photo Gallery — Local Owner API",
+    "version": "1.0.0",
+    "description": "Proposed versioned contract for the private desktop owner manager. Express binds 127.0.0.1:5000; the same-origin local frontend proxies /api and /media. All manager reads and writes are private, except the guarded local session bootstrap which does not require its own bearer token. Public hosting serves static manifests and immutable photo assets only, not this API, tokens, drafts, database, or raw EXIF. This specification is a contract review, not proof that concurrent implementation satisfies it. The unpublished, unversioned prototype is replaced; no external clients have been verified.",
+    "contact": {
+      "name": "Gallery owner — local administrator"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:5000",
+      "description": "Loopback-only owner manager. HTTP is an intentional local-only exception; never bind to a public/LAN interface or deploy this server."
+    }
+  ],
+  "security": [
+    {
+      "OwnerBearer": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Session",
+      "description": "Guarded local owner bootstrap."
+    },
+    {
+      "name": "Galleries",
+      "description": "Private album management and deliberate publication snapshots."
+    },
+    {
+      "name": "Photos",
+      "description": "Single-file preparation and private metadata inspection."
+    },
+    {
+      "name": "Exports",
+      "description": "Local static-site preparation, not remote deployment."
+    }
+  ],
+  "x-local-security": {
+    "bindAddress": "127.0.0.1",
+    "strictOriginGuard": "Every route, including session and reads, checks the socket peer and exact allowed Host. Origin, when supplied, must exactly match a configured local manager origin; reject null/foreign Origin and cross-site fetch contexts. Missing Origin on a browser same-origin GET is not automatically foreign: require an explicit, constrained same-origin/bootstrap policy. Never trust arbitrary forwarded headers to establish local ownership.",
+    "sessionBootstrap": "The local manager operator is the owner; this is not account login. GET session is bearer-exempt but loopback/Host/origin guarded, returns the process-local token, and is no-store. Token remains in frontend memory, never in public output.",
+    "managerReads": "All manager gallery/photo reads require OwnerBearer. Guarded session bootstrap is the only documented bearer exception.",
+    "deployment": "No API is included in public static hosting. This local trust model does not protect against malware or another user/process already controlling the owner computer."
+  },
+  "paths": {
+    "/api/v1/session": {
+      "get": {
+        "operationId": "getSession",
+        "tags": [
+          "Session"
+        ],
+        "summary": "Bootstrap the local owner session",
+        "description": "Bearer-exempt bootstrap, not public login. strictOriginGuard still enforces loopback peer, allowed Host and configured local-origin/fetch policy. A response is usable only by the owner manager frontend. No static public build makes this request.",
+        "responses": {
+          "200": {
+            "description": "Private local owner token.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Local-owner JSON is private and not shared-cacheable. Required value: no-store.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              },
+              "X-Content-Type-Options": {
+                "description": "Do not MIME-sniff owner responses.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "nosniff"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                },
+                "example": {
+                  "token": "<opaque-local-owner-token>"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/v1/galleries": {
+      "get": {
+        "operationId": "getGalleries",
+        "tags": [
+          "Galleries"
+        ],
+        "summary": "List owner galleries, including drafts",
+        "description": "Return a complete JSON gallery array, not an envelope. Private owner read requires bearer and strictOriginGuard. No pagination parameters are accepted in v1. Public visitors instead GET /data/galleries.json. Do not advertise public caching of this owner endpoint.",
+        "responses": {
+          "200": {
+            "description": "Owner gallery array; an empty archive is [].",
+            "headers": {
+              "Cache-Control": {
+                "description": "Local-owner JSON is private and not shared-cacheable. Required value: no-store.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              },
+              "X-Content-Type-Options": {
+                "description": "Do not MIME-sniff owner responses.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "nosniff"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Gallery"
+                  }
+                },
+                "example": [
+                  {
+                    "id": "gallery-example",
+                    "name": "Friday under lights",
+                    "description": "A season in motion.",
+                    "sport": "Football",
+                    "location": "Local stadium",
+                    "eventDate": "2026-09-17",
+                    "themePreset": "example-preset",
+                    "themeColor": "#b6c780",
+                    "coverPhotoId": null,
+                    "publishedAt": null,
+                    "createdAt": "2026-09-18T00:00:00Z",
+                    "photoCount": 0,
+                    "cover": null
+                  }
+                ]
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createGallery",
+        "tags": [
+          "Galleries"
+        ],
+        "summary": "Create a draft gallery",
+        "description": "Create a private draft album. POST is not idempotent; inspect the gallery list before retrying after an ambiguous network failure. Response must include saved editable fields, not only id/name.",
+        "responses": {
+          "201": {
+            "description": "Created gallery.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Local-owner JSON is private and not shared-cacheable. Required value: no-store.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              },
+              "X-Content-Type-Options": {
+                "description": "Do not MIME-sniff owner responses.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "nosniff"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Gallery"
+                },
+                "example": {
+                  "id": "gallery-example",
+                  "name": "Friday under lights",
+                  "description": "A season in motion.",
+                  "sport": "Football",
+                  "location": "Local stadium",
+                  "eventDate": "2026-09-17",
+                  "themePreset": "example-preset",
+                  "themeColor": "#b6c780",
+                  "coverPhotoId": null,
+                  "publishedAt": null,
+                  "createdAt": "2026-09-18T00:00:00Z",
+                  "photoCount": 0,
+                  "cover": null
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "Gallery fields.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GalleryCreate"
+              },
+              "example": {
+                "name": "Friday under lights",
+                "description": "A season in motion.",
+                "sport": "Football",
+                "location": "Local stadium",
+                "eventDate": "2026-09-17",
+                "themeColor": "#b6c780"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/galleries/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "description": "Stable gallery identifier, URL encoded by the client.",
+          "schema": {
+            "type": "string",
+            "minLength": 1
+          },
+          "example": "gallery-example"
+        }
+      ],
+      "patch": {
+        "operationId": "updateGallery",
+        "tags": [
+          "Galleries"
+        ],
+        "summary": "Update gallery metadata and theme",
+        "description": "Apply only supplied editable fields. Existing uploaded photos are not published by this update. Metadata changes become public on the next static export for a published album; new photo IDs remain excluded until deliberate publication.",
+        "responses": {
+          "200": {
+            "description": "Saved gallery with its current editable fields.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Local-owner JSON is private and not shared-cacheable. Required value: no-store.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              },
+              "X-Content-Type-Options": {
+                "description": "Do not MIME-sniff owner responses.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "nosniff"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Gallery"
+                },
+                "example": {
+                  "id": "gallery-example",
+                  "name": "Friday under lights",
+                  "description": "A season in motion.",
+                  "sport": "Football",
+                  "location": "Local stadium",
+                  "eventDate": "2026-09-17",
+                  "themePreset": "example-preset",
+                  "themeColor": "#b6c780",
+                  "coverPhotoId": null,
+                  "publishedAt": null,
+                  "createdAt": "2026-09-18T00:00:00Z",
+                  "photoCount": 0,
+                  "cover": null
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "Partial album changes.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GalleryUpdate"
+              },
+              "example": {
+                "description": "The final whistle.",
+                "themeColor": "#b6c780"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/galleries/{id}/photos": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "description": "Stable gallery identifier, URL encoded by the client.",
+          "schema": {
+            "type": "string",
+            "minLength": 1
+          },
+          "example": "gallery-example"
+        }
+      ],
+      "get": {
+        "operationId": "getPhotos",
+        "tags": [
+          "Photos"
+        ],
+        "summary": "List all owner photos in one album",
+        "description": "Return the complete album metadata array, including private draft additions, in chronological order defined by the implementation. Do not insert another photo’s capture date as fallback. No pagination in v1: the public frontend fetches and caches one static album manifest and initially renders a 36-photo window; that DOM window is not server pagination. Public visitors GET /data/albums/{id}.json, restricted to the last deliberate publication snapshot.",
+        "responses": {
+          "200": {
+            "description": "Complete album photo metadata array; an empty album is [].",
+            "headers": {
+              "Cache-Control": {
+                "description": "Local-owner JSON is private and not shared-cacheable. Required value: no-store.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              },
+              "X-Content-Type-Options": {
+                "description": "Do not MIME-sniff owner responses.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "nosniff"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Photo"
+                  }
+                },
+                "example": [
+                  {
+                    "id": "photo-example",
+                    "galleryId": "gallery-example",
+                    "fileName": "action.jpg",
+                    "mimeType": "image/jpeg",
+                    "width": 6000,
+                    "height": 4000,
+                    "dateTaken": "2026-09-17T18:30:00",
+                    "sport": "Football",
+                    "location": "Local stadium",
+                    "capturedAt": "2026-09-18T00:01:00Z",
+                    "sizeBytes": 20000000,
+                    "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+                    "thumbnailUrl": "/media/photo-example/thumbnail.webp",
+                    "previewUrl": "/media/photo-example/preview.webp",
+                    "originalUrl": "/media/photo-example/original.jpg",
+                    "hasGps": false,
+                    "metadataSource": "exif"
+                  }
+                ]
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          }
+        },
+        "x-pagination-exception": "Full-album metadata is intentional; public manifest cached per album, initial frontend render window 36. Reassess using measured large-album manifest size/parse cost."
+      }
+    },
+    "/api/v1/galleries/{id}/publication": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "description": "Stable gallery identifier, URL encoded by the client.",
+          "schema": {
+            "type": "string",
+            "minLength": 1
+          },
+          "example": "gallery-example"
+        }
+      ],
+      "post": {
+        "operationId": "publishGallery",
+        "tags": [
+          "Galleries"
+        ],
+        "summary": "Record a deliberate album publication snapshot",
+        "description": "After explicit original-quality/public metadata acknowledgement, record the current photo IDs as the public snapshot and return the gallery. This prepares data for a later export; it does not deploy or make the local API reachable. Newly uploaded photos remain draft until another publication.",
+        "responses": {
+          "200": {
+            "description": "Gallery with updated publication state.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Local-owner JSON is private and not shared-cacheable. Required value: no-store.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              },
+              "X-Content-Type-Options": {
+                "description": "Do not MIME-sniff owner responses.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "nosniff"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Gallery"
+                },
+                "example": {
+                  "id": "gallery-example",
+                  "name": "Friday under lights",
+                  "description": "A season in motion.",
+                  "sport": "Football",
+                  "location": "Local stadium",
+                  "eventDate": "2026-09-17",
+                  "themePreset": "example-preset",
+                  "themeColor": "#b6c780",
+                  "coverPhotoId": "photo-example",
+                  "publishedAt": "2026-09-18T00:05:00Z",
+                  "createdAt": "2026-09-18T00:00:00Z",
+                  "photoCount": 1,
+                  "cover": {
+                    "id": "photo-example",
+                    "galleryId": "gallery-example",
+                    "fileName": "action.jpg",
+                    "mimeType": "image/jpeg",
+                    "width": 6000,
+                    "height": 4000,
+                    "dateTaken": "2026-09-17T18:30:00",
+                    "sport": "Football",
+                    "location": "Local stadium",
+                    "capturedAt": "2026-09-18T00:01:00Z",
+                    "sizeBytes": 20000000,
+                    "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+                    "thumbnailUrl": "/media/photo-example/thumbnail.webp",
+                    "previewUrl": "/media/photo-example/preview.webp",
+                    "originalUrl": "/media/photo-example/original.jpg",
+                    "hasGps": false,
+                    "metadataSource": "exif"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "Required explicit public-original acknowledgement.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicationRequest"
+              },
+              "example": {
+                "acknowledgePublicOriginals": true
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/photos": {
+      "post": {
+        "operationId": "uploadPhoto",
+        "tags": [
+          "Photos"
+        ],
+        "summary": "Prepare one original photo as an album draft",
+        "description": "Accept exactly one multipart field named photo, preserve the original byte-for-byte, detect per-image metadata and create display derivatives locally before returning the saved photo. Decoder allowlist: JPEG, PNG, WebP, AVIF, TIFF; first frame only. SVG, GIF, HEIC and RAW are unsupported. Limit original to 100 MiB. No public publication is triggered. Batch handling is bounded in the desktop client. Cancellation/lost responses may leave a completed saved photo; check album before retrying. No Idempotency-Key or automatic deduplication is promised.",
+        "responses": {
+          "201": {
+            "description": "Saved draft photo after local preparation.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Local-owner JSON is private and not shared-cacheable. Required value: no-store.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              },
+              "X-Content-Type-Options": {
+                "description": "Do not MIME-sniff owner responses.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "nosniff"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Photo"
+                },
+                "example": {
+                  "id": "photo-example",
+                  "galleryId": "gallery-example",
+                  "fileName": "action.jpg",
+                  "mimeType": "image/jpeg",
+                  "width": 6000,
+                  "height": 4000,
+                  "dateTaken": "2026-09-17T18:30:00",
+                  "sport": "Football",
+                  "location": "Local stadium",
+                  "capturedAt": "2026-09-18T00:01:00Z",
+                  "sizeBytes": 20000000,
+                  "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+                  "thumbnailUrl": "/media/photo-example/thumbnail.webp",
+                  "previewUrl": "/media/photo-example/preview.webp",
+                  "originalUrl": "/media/photo-example/original.jpg",
+                  "hasGps": false,
+                  "metadataSource": "exif"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error422"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "Exactly one original plus per-file metadata fields. Multipart content overhead is separate from the per-file limit.",
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/PhotoUpload"
+              },
+              "example": {
+                "photo": "<binary original image>",
+                "galleryId": "gallery-example",
+                "sport": "Football",
+                "lastModified": "1789687800000"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/metadata-inspections": {
+      "post": {
+        "operationId": "inspectMetadata",
+        "tags": [
+          "Photos"
+        ],
+        "summary": "Inspect one image without storing a photo",
+        "description": "Transient owner-only image metadata inspection for pre-upload review. No persistent upload or database photo record. Same supported decoder formats and 100 MiB file limit as photo preparation. GPS detection is a warning, not a complete automated privacy review.",
+        "responses": {
+          "200": {
+            "description": "Detected metadata for this file.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Local-owner JSON is private and not shared-cacheable. Required value: no-store.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              },
+              "X-Content-Type-Options": {
+                "description": "Do not MIME-sniff owner responses.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "nosniff"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetadataInspection"
+                },
+                "example": {
+                  "dateTaken": "2026-09-17T18:30:00",
+                  "metadataSource": "exif",
+                  "width": 6000,
+                  "height": 4000,
+                  "hasGps": false,
+                  "camera": "Example camera"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error413"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error422"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "Single inspection file and optional last-modified fallback.",
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/MetadataInspectionRequest"
+              },
+              "example": {
+                "photo": "<binary original image>",
+                "lastModified": "1789687800000"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/exports": {
+      "post": {
+        "operationId": "exportSite",
+        "tags": [
+          "Exports"
+        ],
+        "summary": "Prepare the published static website locally",
+        "description": "Build an output directory containing frontend assets, public album manifests and only deliberately published immutable photo IDs. Exclude owner token, database, draft images and raw EXIF JSON; original files still contain their unchanged embedded EXIF. Reject, do not silently shrink/skip, any original over 25 MiB (26,214,400 bytes) or complete output over 20,000 files. Return only after export completion; copying a retained archive may be slow. This synchronous v1 contract has no job polling or remote deployment. Missing public frontend build is 503. Existing public deployment is unaffected by a local failure.",
+        "responses": {
+          "200": {
+            "description": "Completed local public-site output.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Local-owner JSON is private and not shared-cacheable. Required value: no-store.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              },
+              "X-Content-Type-Options": {
+                "description": "Do not MIME-sniff owner responses.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "nosniff"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExportResult"
+                },
+                "example": {
+                  "outputPath": "/example/local/public-site",
+                  "fileCount": 184,
+                  "totalBytes": 1048576000
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error500"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error503"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "Empty object; prepares files but never deploys them.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExportRequest"
+              },
+              "example": {}
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "OwnerBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Opaque owner token issued only by guarded GET /api/v1/session; not a JWT, OAuth token, viewer credential, or public API key. Required for all other manager operations. Re-bootstrap after token invalidation/restart."
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "additionalProperties": false,
+        "description": "All application JSON errors share this envelope. Do not expose stacks, SQL, tokens or raw metadata.",
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": [
+              "code",
+              "message"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Stable machine-readable failure code; clients must tolerate future codes."
+              },
+              "message": {
+                "type": "string",
+                "description": "Actionable owner-facing message."
+              }
+            },
+            "description": "Actionable machine code and human message; no internal diagnostics."
+          }
+        },
+        "example": {
+          "error": {
+            "code": "VALIDATION_ERROR",
+            "message": "Choose an existing gallery before uploading."
+          }
+        }
+      },
+      "Session": {
+        "type": "object",
+        "required": [
+          "token"
+        ],
+        "description": "Private local bootstrap response. The frontend exposes only {admin:true}, retaining token internally.",
+        "properties": {
+          "token": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque bearer secret. Never log, cache publicly, or export."
+          }
+        },
+        "example": {
+          "token": "<opaque-local-owner-token>"
+        }
+      },
+      "GalleryCreate": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "description": "Editable album fields; new albums are drafts. Unknown-field policy must be confirmed against implementation.",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Gallery title; required when creating.",
+            "minLength": 1
+          },
+          "description": {
+            "type": "string",
+            "description": "Optional curated introduction."
+          },
+          "sport": {
+            "type": "string",
+            "description": "Owner-provided sport label; no automatic sport inference is claimed."
+          },
+          "location": {
+            "type": "string",
+            "description": "Owner-provided venue or location; GPS is not automatically reverse-geocoded."
+          },
+          "eventDate": {
+            "type": "string",
+            "nullable": true,
+            "description": "Owner-provided album date. ISO 8601 date or date-time; EXIF has no reliable timezone when none was recorded."
+          },
+          "themePreset": {
+            "type": "string",
+            "description": "Preset identifier understood by the frontend; not a provider-side theme setting."
+          },
+          "themeColor": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "description": "Custom six-digit hexadecimal accent color. The frontend must retain legible light/dark contrast."
+          },
+          "coverPhotoId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Photo ID belonging to this gallery, or null to use the default cover."
+          },
+          "externalUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "Optional HTTPS Zonerama profile or album URL. When present, no photo files are copied into the public export."
+          }
+        },
+        "example": {
+          "name": "Friday under lights",
+          "description": "A season in motion.",
+          "sport": "Football",
+          "location": "Local stadium",
+          "eventDate": "2026-09-17",
+          "themeColor": "#b6c780"
+        }
+      },
+      "GalleryUpdate": {
+        "type": "object",
+        "minProperties": 1,
+        "description": "Partial editable gallery fields. Omitted fields are unchanged. Null clears only explicitly nullable fields. No client-controlled publication time, count or IDs.",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Gallery title; required when creating.",
+            "minLength": 1
+          },
+          "description": {
+            "type": "string",
+            "description": "Optional curated introduction."
+          },
+          "sport": {
+            "type": "string",
+            "description": "Owner-provided sport label; no automatic sport inference is claimed."
+          },
+          "location": {
+            "type": "string",
+            "description": "Owner-provided venue or location; GPS is not automatically reverse-geocoded."
+          },
+          "eventDate": {
+            "type": "string",
+            "nullable": true,
+            "description": "Owner-provided album date. ISO 8601 date or date-time; EXIF has no reliable timezone when none was recorded."
+          },
+          "themePreset": {
+            "type": "string",
+            "description": "Preset identifier understood by the frontend; not a provider-side theme setting."
+          },
+          "themeColor": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "description": "Custom six-digit hexadecimal accent color. The frontend must retain legible light/dark contrast."
+          },
+          "coverPhotoId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Photo ID belonging to this gallery, or null to use the default cover."
+          },
+          "externalUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "Optional HTTPS Zonerama profile or album URL. Empty string restores local-photo mode."
+          }
+        },
+        "example": {
+          "description": "The final whistle.",
+          "themeColor": "#b6c780"
+        }
+      },
+      "Gallery": {
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "description": "Saved owner-facing album; owner reads include drafts. Public manifests are separately generated from deliberate publication snapshots.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Stable immutable album ID."
+          },
+          "name": {
+            "type": "string",
+            "description": "Gallery title; required when creating."
+          },
+          "description": {
+            "type": "string",
+            "description": "Optional curated introduction."
+          },
+          "sport": {
+            "type": "string",
+            "description": "Owner-provided sport label; no automatic sport inference is claimed."
+          },
+          "location": {
+            "type": "string",
+            "description": "Owner-provided venue or location; GPS is not automatically reverse-geocoded."
+          },
+          "eventDate": {
+            "type": "string",
+            "nullable": true,
+            "description": "Owner-provided album date. ISO 8601 date or date-time; EXIF has no reliable timezone when none was recorded."
+          },
+          "themePreset": {
+            "type": "string",
+            "description": "Preset identifier understood by the frontend; not a provider-side theme setting."
+          },
+          "themeColor": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "description": "Custom six-digit hexadecimal accent color. The frontend must retain legible light/dark contrast."
+          },
+          "coverPhotoId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Photo ID belonging to this gallery, or null to use the default cover."
+          },
+          "externalUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "HTTPS Zonerama destination for a curated external gallery, or an empty string for locally hosted photographs."
+          },
+          "publishedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Last deliberate publication time, null for an unpublished album. ISO 8601 date or date-time; EXIF has no reliable timezone when none was recorded."
+          },
+          "createdAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Creation time. ISO 8601 date or date-time; EXIF has no reliable timezone when none was recorded."
+          },
+          "photoCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Owner-visible photo count. Public photo count must refer to the last published snapshot."
+          },
+          "cover": {
+            "description": "Cover photo when available, otherwise null.",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Photo"
+              },
+              {
+                "type": "object",
+                "nullable": true,
+                "enum": [
+                  null
+                ],
+                "description": "No selected cover."
+              }
+            ]
+          }
+        },
+        "example": {
+          "id": "gallery-example",
+          "name": "Friday under lights",
+          "description": "A season in motion.",
+          "sport": "Football",
+          "location": "Local stadium",
+          "eventDate": "2026-09-17",
+          "themePreset": "example-preset",
+          "themeColor": "#b6c780",
+          "coverPhotoId": null,
+          "publishedAt": null,
+          "createdAt": "2026-09-18T00:00:00Z",
+          "photoCount": 0,
+          "cover": null
+        }
+      },
+      "Photo": {
+        "type": "object",
+        "required": [
+          "id",
+          "galleryId",
+          "fileName"
+        ],
+        "description": "Saved original and locally prepared derivative metadata, without raw EXIF or filesystem paths. Publication chooses a snapshot of photo IDs; upload alone does not publish.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Immutable photo ID; URLs remain stable."
+          },
+          "galleryId": {
+            "type": "string",
+            "description": "Destination album ID."
+          },
+          "fileName": {
+            "type": "string",
+            "description": "Original display filename, not a trusted filesystem path."
+          },
+          "mimeType": {
+            "type": "string",
+            "description": "Validated original media type."
+          },
+          "width": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Oriented display width in pixels."
+          },
+          "height": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Oriented display height in pixels."
+          },
+          "dateTaken": {
+            "type": "string",
+            "nullable": true,
+            "description": "Per-image capture date or clearly identified fallback. ISO 8601 date or date-time; EXIF has no reliable timezone when none was recorded."
+          },
+          "sport": {
+            "type": "string",
+            "description": "Sport label."
+          },
+          "location": {
+            "type": "string",
+            "description": "Owner-provided location label."
+          },
+          "capturedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Local ingestion time; does not substitute for capture time. ISO 8601 date or date-time; EXIF has no reliable timezone when none was recorded."
+          },
+          "sizeBytes": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Original byte length."
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "description": "SHA-256 of the original bytes; downloads must reproduce these bytes."
+          },
+          "thumbnailUrl": {
+            "type": "string",
+            "description": "Private local media URL in owner mode or immutable derivative path in the separately exported static manifest."
+          },
+          "previewUrl": {
+            "type": "string",
+            "description": "Locally optimized preview URL, not the original-quality download."
+          },
+          "originalUrl": {
+            "type": "string",
+            "description": "Unmodified-original URL; draft originals must not appear in public manifests/output."
+          },
+          "hasGps": {
+            "type": "boolean",
+            "description": "Whether original GPS metadata was detected. False is not a guarantee that every possible sensitive tag was audited."
+          },
+          "metadataSource": {
+            "type": "string",
+            "description": "Capture-date provenance such as manual, EXIF, last-modified or unavailable; actual enum vocabulary is not established here."
+          }
+        },
+        "example": {
+          "id": "photo-example",
+          "galleryId": "gallery-example",
+          "fileName": "action.jpg",
+          "mimeType": "image/jpeg",
+          "width": 6000,
+          "height": 4000,
+          "dateTaken": "2026-09-17T18:30:00",
+          "sport": "Football",
+          "location": "Local stadium",
+          "capturedAt": "2026-09-18T00:01:00Z",
+          "sizeBytes": 20000000,
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+          "thumbnailUrl": "/media/photo-example/thumbnail.webp",
+          "previewUrl": "/media/photo-example/preview.webp",
+          "originalUrl": "/media/photo-example/original.jpg",
+          "hasGps": false,
+          "metadataSource": "exif"
+        }
+      },
+      "PhotoUpload": {
+        "type": "object",
+        "required": [
+          "photo",
+          "galleryId"
+        ],
+        "description": "One multipart photo per request. Batch upload consists of bounded client requests with per-file progress, retry and cancellation.",
+        "properties": {
+          "photo": {
+            "type": "string",
+            "format": "binary",
+            "description": "Exactly one original image, unmodified; maximum 104,857,600 bytes (100 MiB). Decoder-supported JPEG, PNG, WebP, AVIF, or TIFF; first frame only for multi-frame images."
+          },
+          "galleryId": {
+            "type": "string",
+            "description": "Existing destination gallery ID."
+          },
+          "sport": {
+            "type": "string",
+            "description": "Optional explicit photo sport; never inferred from pixels."
+          },
+          "location": {
+            "type": "string",
+            "description": "Optional explicit photo location."
+          },
+          "date": {
+            "type": "string",
+            "description": "Optional explicit date override. The manager resolves an individual override before an explicit batch override; omission preserves this photo’s own EXIF date, then its own lastModified fallback."
+          },
+          "lastModified": {
+            "type": "string",
+            "pattern": "^[0-9]+$",
+            "description": "Optional browser file.lastModified timestamp in milliseconds, serialized as a multipart text field. Only a fallback; not evidence of capture date."
+          }
+        },
+        "example": {
+          "photo": "<binary original image>",
+          "galleryId": "gallery-example",
+          "sport": "Football",
+          "lastModified": "1789687800000"
+        }
+      },
+      "MetadataInspectionRequest": {
+        "type": "object",
+        "required": [
+          "photo"
+        ],
+        "description": "Transient multipart image inspection; no persistent photo or gallery record is created.",
+        "properties": {
+          "photo": {
+            "type": "string",
+            "format": "binary",
+            "description": "Exactly one original image, unmodified; maximum 104,857,600 bytes (100 MiB). Decoder-supported JPEG, PNG, WebP, AVIF, or TIFF; first frame only for multi-frame images."
+          },
+          "lastModified": {
+            "type": "string",
+            "pattern": "^[0-9]+$",
+            "description": "Optional browser file.lastModified timestamp in milliseconds, serialized as a multipart text field. Only a fallback; not evidence of capture date."
+          }
+        },
+        "example": {
+          "photo": "<binary original image>",
+          "lastModified": "1789687800000"
+        }
+      },
+      "MetadataInspection": {
+        "type": "object",
+        "description": "Detected metadata for owner review, not sport/location inference or a complete privacy audit.",
+        "properties": {
+          "dateTaken": {
+            "type": "string",
+            "nullable": true,
+            "description": "This file’s own detected/fallback date. ISO 8601 date or date-time; EXIF has no reliable timezone when none was recorded."
+          },
+          "metadataSource": {
+            "type": "string",
+            "description": "Date source."
+          },
+          "width": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Oriented width."
+          },
+          "height": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Oriented height."
+          },
+          "hasGps": {
+            "type": "boolean",
+            "description": "Detected original GPS metadata presence."
+          },
+          "camera": {
+            "type": "string",
+            "nullable": true,
+            "description": "Detected camera description, when available; transient inspection only."
+          }
+        },
+        "example": {
+          "dateTaken": "2026-09-17T18:30:00",
+          "metadataSource": "exif",
+          "width": 6000,
+          "height": 4000,
+          "hasGps": false,
+          "camera": "Example camera"
+        }
+      },
+      "PublicationRequest": {
+        "description": "Deliberate acknowledgement before publication. Local-photo albums publish current photo IDs; Zonerama-backed albums publish only their curated external link.",
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["acknowledgePublicOriginals"],
+            "properties": {
+              "acknowledgePublicOriginals": { "type": "boolean", "enum": [true] }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["acknowledgeExternalGallery"],
+            "properties": {
+              "acknowledgeExternalGallery": { "type": "boolean", "enum": [true] }
+            }
+          }
+        ]
+      },
+      "ExportRequest": {
+        "type": "object",
+        "description": "Empty object used by exportSite(); no provider credentials or deployment target are accepted.",
+        "properties": {},
+        "additionalProperties": false,
+        "example": {}
+      },
+      "ExportResult": {
+        "type": "object",
+        "required": [
+          "outputPath",
+          "fileCount",
+          "totalBytes"
+        ],
+        "description": "Completed local static output. Not a hosted URL or confirmation of deployment.",
+        "properties": {
+          "outputPath": {
+            "type": "string",
+            "description": "Private local absolute output directory; never copied into public data."
+          },
+          "fileCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Complete output asset count, including code, manifests, images and originals."
+          },
+          "totalBytes": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Complete output byte count."
+          }
+        },
+        "example": {
+          "outputPath": "/example/local/public-site",
+          "fileCount": 184,
+          "totalBytes": 1048576000
+        }
+      }
+    },
+    "responses": {
+      "Error400": {
+        "description": "Invalid input, malformed JSON, missing required fields, or wrong multipart shape.",
+        "headers": {
+          "Cache-Control": {
+            "description": "Local-owner JSON is private and not shared-cacheable. Required value: no-store.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "no-store"
+              ]
+            }
+          },
+          "X-Content-Type-Options": {
+            "description": "Do not MIME-sniff owner responses.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "nosniff"
+              ]
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "code": "VALIDATION_ERROR",
+                "message": "Invalid input, malformed JSON, missing required fields, or wrong multipart shape."
+              }
+            }
+          }
+        }
+      },
+      "Error401": {
+        "description": "Missing or invalid owner bearer token. Obtain a fresh session after restarting the manager.",
+        "headers": {
+          "Cache-Control": {
+            "description": "Local-owner JSON is private and not shared-cacheable. Required value: no-store.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "no-store"
+              ]
+            }
+          },
+          "X-Content-Type-Options": {
+            "description": "Do not MIME-sniff owner responses.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "nosniff"
+              ]
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "code": "UNAUTHORIZED",
+                "message": "Missing or invalid owner bearer token. Obtain a fresh session after restarting the manager."
+              }
+            }
+          }
+        }
+      },
+      "Error403": {
+        "description": "Non-loopback peer/Host or rejected Origin/fetch context. Open the manager from its configured local origin.",
+        "headers": {
+          "Cache-Control": {
+            "description": "Local-owner JSON is private and not shared-cacheable. Required value: no-store.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "no-store"
+              ]
+            }
+          },
+          "X-Content-Type-Options": {
+            "description": "Do not MIME-sniff owner responses.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "nosniff"
+              ]
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "code": "FORBIDDEN",
+                "message": "Non-loopback peer/Host or rejected Origin/fetch context. Open the manager from its configured local origin."
+              }
+            }
+          }
+        }
+      },
+      "Error404": {
+        "description": "The gallery/photo/resource was not found.",
+        "headers": {
+          "Cache-Control": {
+            "description": "Local-owner JSON is private and not shared-cacheable. Required value: no-store.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "no-store"
+              ]
+            }
+          },
+          "X-Content-Type-Options": {
+            "description": "Do not MIME-sniff owner responses.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "nosniff"
+              ]
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "code": "NOT_FOUND",
+                "message": "The gallery/photo/resource was not found."
+              }
+            }
+          }
+        }
+      },
+      "Error409": {
+        "description": "Export constraints prevent a safe static export: an original exceeds 25 MiB or total output exceeds 20,000 files. Originals must not be recompressed or silently omitted.",
+        "headers": {
+          "Cache-Control": {
+            "description": "Local-owner JSON is private and not shared-cacheable. Required value: no-store.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "no-store"
+              ]
+            }
+          },
+          "X-Content-Type-Options": {
+            "description": "Do not MIME-sniff owner responses.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "nosniff"
+              ]
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "code": "EXPORT_CONSTRAINT",
+                "message": "Export constraints prevent a safe static export: an original exceeds 25 MiB or total output exceeds 20,000 files. Originals must not be recompressed or silently omitted."
+              }
+            }
+          }
+        }
+      },
+      "Error413": {
+        "description": "The upload exceeds the 100 MiB per-file limit. No successful photo response is produced.",
+        "headers": {
+          "Cache-Control": {
+            "description": "Local-owner JSON is private and not shared-cacheable. Required value: no-store.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "no-store"
+              ]
+            }
+          },
+          "X-Content-Type-Options": {
+            "description": "Do not MIME-sniff owner responses.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "nosniff"
+              ]
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "code": "UPLOAD_TOO_LARGE",
+                "message": "The upload exceeds the 100 MiB per-file limit. No successful photo response is produced."
+              }
+            }
+          }
+        }
+      },
+      "Error422": {
+        "description": "The file format is unsupported or the image cannot be decoded. Use a supported, valid image.",
+        "headers": {
+          "Cache-Control": {
+            "description": "Local-owner JSON is private and not shared-cacheable. Required value: no-store.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "no-store"
+              ]
+            }
+          },
+          "X-Content-Type-Options": {
+            "description": "Do not MIME-sniff owner responses.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "nosniff"
+              ]
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "code": "UNSUPPORTED_IMAGE",
+                "message": "The file format is unsupported or the image cannot be decoded. Use a supported, valid image."
+              }
+            }
+          }
+        }
+      },
+      "Error500": {
+        "description": "Unexpected local processing or storage failure. Check the album before retrying a mutation; a lost response does not prove the mutation failed.",
+        "headers": {
+          "Cache-Control": {
+            "description": "Local-owner JSON is private and not shared-cacheable. Required value: no-store.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "no-store"
+              ]
+            }
+          },
+          "X-Content-Type-Options": {
+            "description": "Do not MIME-sniff owner responses.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "nosniff"
+              ]
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "code": "INTERNAL_ERROR",
+                "message": "Unexpected local processing or storage failure. Check the album before retrying a mutation; a lost response does not prove the mutation failed."
+              }
+            }
+          }
+        }
+      },
+      "Error503": {
+        "description": "The public frontend build needed for export is missing. Build the public frontend and retry.",
+        "headers": {
+          "Cache-Control": {
+            "description": "Local-owner JSON is private and not shared-cacheable. Required value: no-store.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "no-store"
+              ]
+            }
+          },
+          "X-Content-Type-Options": {
+            "description": "Do not MIME-sniff owner responses.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "nosniff"
+              ]
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "code": "BUILD_MISSING",
+                "message": "The public frontend build needed for export is missing. Build the public frontend and retry."
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "x-example-policy": "All examples are illustrative placeholders, not verified production records, real hashes, installed preset IDs or existing filesystem paths. Exact metadataSource/preset vocabulary and media path spelling must be aligned against implementation."
+}
