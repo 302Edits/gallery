@@ -28,6 +28,7 @@ export default function LiveArchive({ mode, onAppearanceChange }) {
     if (!collectionId) archiveScroll.current = window.scrollY;
     const url = new URL(window.location.href);
     if (id) url.searchParams.set('collection', id); else url.searchParams.delete('collection');
+    url.searchParams.delete('photo');
     url.hash = '';
     window.history.pushState({}, '', url); setCollectionId(id);
   }

@@ -82,3 +82,54 @@ test('phone controls stay thumb-sized in both themes and the viewer fits portrai
     for (const button of buttons) { expect(button.left).toBeGreaterThanOrEqual(0); expect(button.right).toBeLessThanOrEqual(size.width + 1); expect(button.bottom).toBeLessThanOrEqual(size.height + 1); expect(button.width).toBeGreaterThanOrEqual(44); expect(button.height).toBeGreaterThanOrEqual(44); }
   }
 });
+
+test('Instagram save options preserve the photo and offer a same-tab original', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'userAgent', { value: 'Mozilla/5.0 (iPhone) Instagram 400.0' });
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText: async text => { window.copiedPhotoLink = text; } } });
+  });
+  await mock(page);
+  await page.goto('/?collection=123&photo=101');
+  await expect(page.locator('.collection-viewer-count')).toHaveText('2 / 80');
+  const download = page.getByRole('button', { name: 'Download', exact: true });
+  await download.click();
+  const options = page.getByRole('dialog', { name: 'Save this photo' });
+  await expect(options).toBeVisible();
+  const original = options.getByRole('link', { name: 'Download original' });
+  await expect(original).toHaveAttribute('href', '/api/zonerama/albums/123/download/101');
+  expect(await original.getAttribute('target')).toBeNull();
+  await expect(options.getByAltText('Photo preview to save')).toBeVisible();
+  await options.getByRole('button', { name: 'Copy photo link' }).click();
+  expect(await page.evaluate(() => window.copiedPhotoLink)).toContain('?collection=123&photo=101');
+  await expect(options.getByRole('status')).toContainText('Link copied');
+  await page.keyboard.press('Escape');
+  await expect(options).toHaveCount(0);
+  await expect(download).toBeFocused();
+  await expect(page.locator('.collection-viewer')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'All collections', exact: true }).first().click();
+  await expect(page).not.toHaveURL(/photo=/);
+});
+
+test('Instagram clipboard failure leaves a selectable link and respects disabled downloads', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'userAgent', { value: 'Mozilla/5.0 (Linux; Android) Instagram 400.0' });
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText: async () => { throw new Error('Not allowed'); } } });
+  });
+  await mock(page);
+  await page.goto('/?collection=123&photo=100');
+  await page.getByRole('button', { name: 'Download', exact: true }).click();
+  const options = page.getByRole('dialog', { name: 'Save this photo' });
+  await options.getByRole('button', { name: 'Copy photo link' }).click();
+  await expect(options.getByRole('status')).toContainText('Touch and hold the link');
+  await expect(options.getByRole('textbox', { name: 'Photo link' })).toHaveValue(/collection=123&photo=100/);
+  for (const size of [{ width: 320, height: 568 }, { width: 844, height: 390 }]) {
+    await page.setViewportSize(size);
+    expect(await options.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
+    expect(await options.evaluate(el => el.getBoundingClientRect().bottom <= innerHeight)).toBe(true);
+  }
+  await mock(page, false);
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Downloads disabled', exact: true })).toBeDisabled();
+  await expect(options).toHaveCount(0);
+});

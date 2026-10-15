@@ -4,6 +4,7 @@ import { useDialogLifecycle } from './Lightbox';
 import { photoRows } from '../utils/photo-layout';
 import { originalDownloadUrl, zoneramaUrl } from '../utils/zonerama-url';
 import './live-album.css';
+import PhotoSaveDialog from './PhotoSaveDialog';
 
 function Photograph({ photo, name, preview = false, eager = false }) {
   const [failed, setFailed] = useState('');
@@ -50,7 +51,8 @@ function Viewer({ photos, photoId, onChange, onClose, onDownload, downloadable, 
 export default function LiveAlbum({ id, onBack }) {
   const [album, setAlbum] = useState(null), [error, setError] = useState(''), [busy, setBusy] = useState(true);
   const [limit, setLimit] = useState(36), [compact, setCompact] = useState(false), [width, setWidth] = useState(0);
-  const [viewerId, setViewerId] = useState(null), [saving, setSaving] = useState(false), [downloadError, setDownloadError] = useState('');
+  const [viewerId, setViewerId] = useState(() => new URLSearchParams(window.location.search).get('photo')), [saving, setSaving] = useState(false), [downloadError, setDownloadError] = useState('');
+  const [savePhoto, setSavePhoto] = useState(null);
   const [shareMessage, setShareMessage] = useState('');
   const request = useRef(null), grid = useRef(null), sentinel = useRef(null), saveController = useRef(null);
   const load = useCallback(async () => {
@@ -90,7 +92,8 @@ export default function LiveAlbum({ id, onBack }) {
   }, [album, limit]);
   const rows = useMemo(() => photoRows(album?.photos.slice(0, limit) || [], width, width < 600 ? compact ? 145 : 245 : compact ? 210 : 340, width < 600 ? 8 : 12, width < 600 ? compact ? 3 : 2 : Infinity), [album, limit, width, compact]);
   async function download(photo) {
-    if (saving) return;
+    if (saving || !album?.downloadable) return;
+    if (/Instagram/i.test(navigator.userAgent)) { setSavePhoto(photo); return; }
     const direct = originalDownloadUrl(photo.id);
     if (direct) {
       const link = document.createElement('a');
@@ -135,5 +138,6 @@ export default function LiveAlbum({ id, onBack }) {
     </>}
     <div className="collection-bottom live-width"><button onClick={onBack}><ArrowLeft size={17} />All collections</button><p>Updated from Zonerama</p></div>
     {viewerId && album?.photos.some(photo => photo.id === viewerId) && <Viewer photos={album.photos} photoId={viewerId} onChange={setViewerId} onClose={() => setViewerId(null)} onDownload={download} downloadable={album.downloadable} saving={saving} downloadError={downloadError} albumName={album.name} />}
+    {savePhoto && album?.downloadable && <PhotoSaveDialog photo={savePhoto} albumId={id} onClose={() => setSavePhoto(null)} />}
   </main>;
 }

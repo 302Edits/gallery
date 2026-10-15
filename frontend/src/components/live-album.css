@@ -97,3 +97,18 @@
  .collection-notice { flex-direction:column; }
 }
 @media(max-height:500px) and (orientation:landscape) { .collection-viewer-header { padding:6px 12px; } .collection-viewer-footer { display:flex; padding:6px 12px; } .collection-viewer-hint { display:none; } }
+
+.photo-save-dialog { margin:auto; width:min(480px,calc(100% - 24px)); max-height:calc(100dvh - 32px); padding:24px; border:1px solid var(--surface); border-radius:16px; background:var(--bg); color:var(--text); overflow:auto; overscroll-behavior:contain; }
+.photo-save-dialog::backdrop { background:rgb(0 0 0 / .72); }
+.photo-save-dialog header { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.photo-save-dialog h2 { font-size:24px; }
+.photo-save-dialog h3 { font-size:18px; }
+.photo-save-dialog p { margin-block:12px; font-size:14px; line-height:1.5; }
+.photo-save-dialog button, .photo-save-original { min-height:48px; min-width:48px; border-radius:8px; padding:12px; display:flex; align-items:center; justify-content:center; gap:8px; font-size:16px; }
+.photo-save-dialog button { background:var(--surface); color:var(--text); }
+.photo-save-original { background:var(--text); color:var(--bg); }
+.photo-save-copy { width:100%; }
+.photo-save-dialog input { width:100%; min-height:44px; padding:8px; border:1px solid var(--muted); border-radius:6px; background:var(--bg); color:var(--text); font-size:16px; }
+.photo-save-dialog [role='status']:empty { display:none; }
+.photo-save-preview { margin-top:24px; }
+.photo-save-preview img { display:block; width:100%; max-height:300px; object-fit:contain; -webkit-touch-callout:default; user-select:auto; }
