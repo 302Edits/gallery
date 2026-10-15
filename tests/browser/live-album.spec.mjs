@@ -29,9 +29,9 @@ test('expanded viewer navigates, zooms, downloads and restores focus',async({pag
   await page.goto('/?collection=123');
   const opener=page.getByRole('button',{name:'Maximize photograph 1',exact:true});await opener.click();
   const dialog=page.getByRole('dialog');await expect(dialog).toBeVisible();
-  await expect(dialog.locator('.collection-viewer-count')).toHaveText('1 / 80');
+  await expect(dialog.locator('.collection-viewer-count')).toHaveText('Photo 1 of 80');
   await page.getByRole('button',{name:'Next photograph',exact:true}).click();
-  await expect(dialog.locator('.collection-viewer-count')).toHaveText('2 / 80');
+  await expect(dialog.locator('.collection-viewer-count')).toHaveText('Photo 2 of 80');
   await page.keyboard.press('ArrowLeft');
   await page.getByRole('button',{name:'Zoom in',exact:true}).click();await expect(page.locator('.collection-viewer-stage')).toHaveClass(/is-zoomed/);
   await page.getByRole('button',{name:'Zoom out',exact:true}).click();
@@ -55,7 +55,7 @@ test('deep link failure can be retried and mobile swipe advances photographs',as
     element.dispatchEvent(new TouchEvent('touchstart', { bubbles: true, touches: [new Touch({ identifier: 1, target: element, clientX: 300, clientY: 150 })] }));
     element.dispatchEvent(new TouchEvent('touchend', { bubbles: true, changedTouches: [new Touch({ identifier: 1, target: element, clientX: 100, clientY: 155 })] }));
   });
-  await expect(page.locator('.collection-viewer-count')).toHaveText('2 / 80');
+  await expect(page.locator('.collection-viewer-count')).toHaveText('Photo 2 of 80');
 });
 
 test('phone controls stay thumb-sized in both themes and the viewer fits portrait and landscape', async ({ page }, testInfo) => {
@@ -90,7 +90,7 @@ test('Instagram save options preserve the photo and offer a same-tab original', 
   });
   await mock(page);
   await page.goto('/?collection=123&photo=101');
-  await expect(page.locator('.collection-viewer-count')).toHaveText('2 / 80');
+  await expect(page.locator('.collection-viewer-count')).toHaveText('Photo 2 of 80');
   const download = page.getByRole('button', { name: 'Download', exact: true });
   await download.click();
   const options = page.getByRole('dialog', { name: 'Save this photo' });

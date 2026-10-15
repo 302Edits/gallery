@@ -33,14 +33,14 @@ function Viewer({ photos, photoId, onChange, onClose, onDownload, downloadable, 
     if (event.key === 'ArrowRight') { event.preventDefault(); move(1); }
     if (event.key === 'ArrowLeft') { event.preventDefault(); move(-1); }
   }}>
-    <header className="collection-viewer-header"><div><h2>{albumName}</h2></div><span className="collection-viewer-count" aria-live="polite">{index + 1} / {photos.length}</span><button data-initial-focus aria-label="Close photograph" onClick={onClose}><X size={23} /></button></header>
+    <header className="collection-viewer-header"><div><h2>{albumName}</h2></div><button data-initial-focus aria-label="Close photograph" onClick={onClose}><X size={23} /></button></header>
     <div ref={stage} className={`collection-viewer-stage ${zoomed ? 'is-zoomed' : ''}`} onDoubleClick={() => setZoomed(value => !value)} onTouchStart={event => { if (event.touches.length === 1) touch.current = { x: event.touches[0].clientX, y: event.touches[0].clientY }; else touch.current = null; }} onTouchEnd={event => {
       if (!touch.current || zoomed) return;
       const dx = event.changedTouches[0].clientX - touch.current.x, dy = event.changedTouches[0].clientY - touch.current.y;
       touch.current = null;
       if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) move(dx < 0 ? 1 : -1);
     }}><Photograph key={photo.id} photo={photo} name={`${albumName}, photograph ${index + 1}`} preview /></div>
-    <footer className="collection-viewer-footer"><div className="collection-viewer-navigation"><button aria-label="Previous photograph" onClick={() => move(-1)} disabled={photos.length < 2}><ChevronLeft size={22} /></button><span>{photo.width.toLocaleString()} × {photo.height.toLocaleString()}</span><button aria-label="Next photograph" onClick={() => move(1)} disabled={photos.length < 2}><ChevronRight size={22} /></button></div>
+    <footer className="collection-viewer-footer"><div className="collection-viewer-navigation"><button aria-label="Previous photograph" onClick={() => move(-1)} disabled={photos.length < 2}><ChevronLeft size={22} /></button><span className="collection-viewer-count" aria-live="polite" aria-atomic="true">Photo {index + 1} of {photos.length}</span><button aria-label="Next photograph" onClick={() => move(1)} disabled={photos.length < 2}><ChevronRight size={22} /></button></div>
       <div className="collection-viewer-actions"><button aria-label={zoomed ? 'Zoom out' : 'Zoom in'} aria-pressed={zoomed} onClick={() => setZoomed(value => !value)}>{zoomed ? <ZoomOut size={19} /> : <ZoomIn size={19} />}</button>{document.fullscreenEnabled && <button aria-label={fullscreen ? 'Exit full screen' : 'Enter full screen'} onClick={toggleFullscreen}>{fullscreen ? <Minimize size={19} /> : <Maximize size={19} />}</button>}<button className="collection-save" disabled={!downloadable || saving} onClick={() => onDownload(photo)}><Download size={18} /><span>{saving ? 'Preparing…' : downloadable ? 'Download' : 'Downloads disabled'}</span></button></div>
     </footer>
     {(downloadError || fullscreenError) && <p className="collection-viewer-error" role="alert">{downloadError || fullscreenError}</p>}
