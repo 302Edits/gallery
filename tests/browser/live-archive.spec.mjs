@@ -103,6 +103,33 @@ test('collection previews preserve the complete cover image', async ({ page }) =
   expect(ratio).toBeCloseTo(2, 1);
 });
 
+test('landing page keeps photographs and archive controls useful on phones', async ({ page }) => {
+  await page.route('**/api/zonerama', route => route.fulfill({ json: archive(Array.from({ length: 18 }, (_, i) => album(String(i), `Soccer event ${i}`))) }));
+  await page.goto('/');
+  await expect(page.locator('.live-card')).toHaveCount(18);
+  for (const width of [320, 390, 600]) {
+    await page.setViewportSize({ width, height: 568 });
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    const layout = await page.evaluate(() => {
+      const featured = document.querySelector('.live-featured').getBoundingClientRect();
+      const cards = [...document.querySelectorAll('.live-card')].slice(0, 2).map(card => card.getBoundingClientRect());
+      const storyList = document.querySelector('.live-story-list');
+      return {
+        featuredTop: featured.top,
+        featuredWidth: featured.width,
+        cardColumns: Math.round(cards[0].top) === Math.round(cards[1].top),
+        storiesScroll: storyList.scrollWidth > storyList.clientWidth,
+        smallType: Math.min(...[...document.querySelectorAll('.live-card-meta, .live-featured-caption')].map(element => parseFloat(getComputedStyle(element).fontSize))),
+      };
+    });
+    expect(layout.featuredTop).toBeLessThan(540);
+    expect(layout.featuredWidth).toBeGreaterThanOrEqual(width - 32);
+    expect(layout.cardColumns).toBe(true);
+    expect(layout.storiesScroll).toBe(true);
+    expect(layout.smallType).toBeGreaterThanOrEqual(14);
+  }
+});
+
 test('scroll reveals settle and respond to reduced-motion changes', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.route('**/api/zonerama', route => route.fulfill({ json: archive(Array.from({ length: 18 }, (_, i) => album(String(i)))) }));
