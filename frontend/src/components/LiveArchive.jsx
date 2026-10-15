@@ -1,10 +1,15 @@
 import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ArrowDown, ArrowUp, ArrowUpRight, Camera, Palette, RefreshCw, Search, X } from 'lucide-react';
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ArrowUpRight, Camera, Palette, RefreshCw, Search, X } from 'lucide-react';
+import { useGSAP } from '@gsap/react';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import './live-archive.css';
 const LiveAlbum = lazy(() => import('./LiveAlbum'));
 import { isStaticSnapshot, siteHome, zoneramaUrl } from '../utils/zonerama-url';
+gsap.registerPlugin(useGSAP, ScrollTrigger);
 const source = 'https://eu.zonerama.com/302Edits/2037673';
 const interval = 5 * 60 * 1000;
+const manifesto = 'A match is more than the result. It is pressure, release, recovery, and the glance before the whistle. 302 Edits keeps the seconds that make the score matter.';
 const themes = [
   { id: 'paper', name: 'Paper', colors: ['#f1f1ef', '#e5e5e1', '#1c1c1c'] },
   { id: 'stone', name: 'Stone', colors: ['#dedbd3', '#cbc7bc', '#24231f'] },
@@ -13,17 +18,17 @@ const themes = [
   { id: 'carbon', name: 'Charcoal', colors: ['#242424', '#303030', '#f1f1ef'] },
   { id: 'forest', name: 'Forest', colors: ['#101a14', '#1c2921', '#edf0ec'] },
 ];
-function Cover({ album, eager = false }) {
+function Cover({ album, eager = false, decorative = false }) {
   const [failedUrl, setFailedUrl] = useState('');
-  return failedUrl === album.cover ? <span className="live-cover-fallback"><Camera size={32} />Preview unavailable</span> : <img src={album.cover} alt={`${album.name} contact sheet`} width="1600" height="800" loading={eager ? 'eager' : 'lazy'} fetchPriority={eager ? 'high' : undefined} decoding={eager ? 'sync' : 'async'} referrerPolicy="no-referrer" onError={() => setFailedUrl(album.cover)} />;
+  return failedUrl === album.cover ? <span className="live-cover-fallback" aria-hidden={decorative || undefined}><Camera size={32} />Preview unavailable</span> : <img src={album.cover} alt={decorative ? '' : `${album.name} contact sheet`} width="1600" height="800" loading={eager ? 'eager' : 'lazy'} fetchPriority={eager ? 'high' : undefined} decoding={eager ? 'sync' : 'async'} referrerPolicy="no-referrer" onError={() => setFailedUrl(album.cover)} />;
 }
 export default function LiveArchive({ mode, onAppearanceChange }) {
   const [collectionId, setCollectionId] = useState(() => new URLSearchParams(window.location.search).get('collection') || '');
   const archiveScroll = useRef(0);
   const site = useRef(null);
-  const revealed = useRef(new WeakSet());
   const themePicker = useRef(null);
   const [themeOpen, setThemeOpen] = useState(false);
+  const [dispatchIndex, setDispatchIndex] = useState(0);
   function navigateCollection(id = '') {
     if (!collectionId) archiveScroll.current = window.scrollY;
     const url = new URL(window.location.href);
@@ -93,40 +98,35 @@ export default function LiveArchive({ mode, onAppearanceChange }) {
     if (sort !== 'source') items.sort((a, b) => sort === 'name' ? a.name.localeCompare(b.name) : a.date.localeCompare(b.date));
     return items;
   }, [archive, category, query, sort]);
-  useEffect(() => {
-    const root = site.current;
-    const preference = window.matchMedia('(prefers-reduced-motion: reduce)');
-    let cleanup = () => {};
-    const setup = () => {
-      cleanup();
-      if (preference.matches || collectionId || !root || !('IntersectionObserver' in window)) return;
-      const animations = new Set();
-      const observer = new IntersectionObserver(entries => {
-        entries.forEach(({ target, isIntersecting }) => {
-          if (!isIntersecting) return;
-          revealed.current.add(target);
-          const animation = target.animate([
-            { transform: 'translateY(20px)', opacity: 0 },
-            { transform: 'translateY(0)', opacity: 1 },
-          ], { duration: 600, fill: 'backwards', easing: 'cubic-bezier(.22,1,.36,1)', delay: Number(target.dataset.revealDelay || 0) });
-          animations.add(animation);
-          animation.onfinish = () => { animation.cancel(); animations.delete(animation); };
-          observer.unobserve(target);
-        });
-      }, { threshold: .08, rootMargin: '0px 0px -24px 0px' });
-      root.querySelectorAll('.live-story, .live-card, .live-collection-title, .live-manifesto-copy, .live-footer-inner').forEach(node => { if (!revealed.current.has(node)) observer.observe(node); });
-      cleanup = () => {
-        observer.disconnect();
-        animations.forEach(animation => animation.cancel());
-      };
-    };
-    setup();
-    preference.addEventListener('change', setup);
-    return () => { cleanup(); preference.removeEventListener('change', setup); };
-  }, [collectionId, filtered, limit]);
   const photoCount = albums.reduce((total, album) => total + album.photoCount, 0);
   const featured = albums[0];
-  const recent = albums.slice(0, 3);
+  const bento = albums.slice(0, 4);
+  const dispatches = albums.slice(0, 5);
+  const safeDispatchIndex = dispatches.length ? dispatchIndex % dispatches.length : 0;
+  const activeDispatch = dispatches[safeDispatchIndex] || featured;
+  const marqueeItems = categories.slice(1);
+  useGSAP(() => {
+    if (collectionId || !site.current) return undefined;
+    const media = gsap.matchMedia();
+    media.add('(prefers-reduced-motion: no-preference)', () => {
+      const heroItems = gsap.utils.toArray('.live-hero-copy > *');
+      const featuredLink = site.current.querySelector('.live-featured-link');
+      if (heroItems.length) gsap.from(heroItems, { y: 32, opacity: 0, duration: 0.9, stagger: 0.08, ease: 'power3.out' });
+      if (featuredLink) gsap.from(featuredLink, { scale: 0.94, opacity: 0, duration: 1.1, ease: 'power3.out' });
+      gsap.utils.toArray('.live-motion-image').forEach(element => {
+        gsap.timeline({ scrollTrigger: { trigger: element, start: 'top 94%', end: 'bottom 6%', scrub: 0.7 } })
+          .fromTo(element, { scale: 0.82, opacity: 0.35, filter: 'brightness(0.55)' }, { scale: 1, opacity: 1, filter: 'brightness(1)', duration: 0.45, ease: 'none' })
+          .to(element, { scale: 0.96, opacity: 0.22, filter: 'brightness(0.48)', duration: 0.55, ease: 'none' });
+      });
+      const words = gsap.utils.toArray('.live-manifesto-word');
+      if (words.length) gsap.fromTo(words, { opacity: 0.1 }, { opacity: 1, stagger: 0.035, ease: 'none', scrollTrigger: { trigger: '.live-manifesto-statement', start: 'top 78%', end: 'bottom 42%', scrub: 0.8 } });
+    });
+    media.add('(prefers-reduced-motion: reduce)', () => {
+      const staticTargets = gsap.utils.toArray('.live-motion-image, .live-manifesto-word, .live-hero-copy > *, .live-featured-link');
+      if (staticTargets.length) gsap.set(staticTargets, { clearProps: 'all', opacity: 1, scale: 1, filter: 'none' });
+    });
+    return () => media.revert();
+  }, { scope: site, dependencies: [collectionId, archive?.updatedAt, filtered.length, limit], revertOnUpdate: true });
   function filter(setter, value) { setter(value); setLimit(18); }
   return <div className="live-site" ref={site}>
     <a className="skip-link" href={collectionId ? "#collection-top" : "#collections"}>Skip to collections</a>
@@ -136,34 +136,35 @@ export default function LiveArchive({ mode, onAppearanceChange }) {
         <a className="live-source-link" href={source} target="_blank" rel="noopener noreferrer">Full archive <ArrowUpRight size={15} /></a>
         <div className="live-theme-wrap" ref={themePicker}><button className="live-theme" aria-label="Choose site theme" aria-expanded={themeOpen} onClick={() => setThemeOpen(value => !value)}><Palette size={19} /><span>Theme</span></button>{themeOpen && <div className="live-theme-panel" aria-label="Site themes"><p>Choose a theme</p><div>{themes.map(theme => <button key={theme.id} className={mode === theme.id ? 'is-active' : ''} aria-pressed={mode === theme.id} onClick={() => { onAppearanceChange(theme.id); setThemeOpen(false); }}><span className="live-theme-swatch" aria-hidden="true" style={{ '--swatch-bg': theme.colors[0], '--swatch-surface': theme.colors[1], '--swatch-ink': theme.colors[2] }}><i /><i /><i /></span><strong>{theme.name}</strong></button>)}</div></div>}</div></nav>
     </header>
-    {collectionId ? <Suspense fallback={<main className="loading-state" role="status">Loading collection…</main>}><LiveAlbum key={collectionId} id={collectionId} onBack={() => navigateCollection()} /></Suspense> : <main>
+    {collectionId ? <Suspense fallback={<main className="loading-state" role="status">Loading collection…</main>}><LiveAlbum key={collectionId} id={collectionId} onBack={() => navigateCollection()} /></Suspense> : <main className="live-main overflow-x-hidden w-full max-w-full">
       <section className="live-intro" aria-labelledby="portfolio-title">
         <div className="live-intro-layout live-width">
-          <div className="live-intro-copy">
-            <h1 id="portfolio-title"><span>302</span><span>Edits</span></h1>
-            <p className="live-intro-lead">Independent sports photography. The seconds around the score, held still.</p>
-            <div className="live-hero-stats" aria-label="Archive status">
-              <span>{archive ? `${albums.length} collections` : 'Connecting to the archive'}</span>
-              {archive && <span>{photoCount.toLocaleString()} photographs</span>}
-              <span>{error ? 'Showing the last successful edit' : archive ? 'Live and current' : 'Synchronizing'}</span>
-            </div>
+          <div className="live-hero-copy">
+            <h1 id="portfolio-title" className="max-w-6xl w-full">Hold the <span className="live-inline-image" aria-hidden="true">{featured && <Cover album={featured} eager decorative />}</span> game still.</h1>
+            <p className="live-intro-lead">Independent sports photography built around movement, pressure, and the quiet after the play.</p>
             <div className="live-intro-actions">
-              {featured && <a className="live-primary" href={`?collection=${featured.id}`} onClick={event => openCollection(event, featured.id)}>Open featured game <ArrowUpRight size={18} /></a>}
-              <a className="live-text-link" href="#collections">Search the archive <ArrowDown size={18} /></a>
+              <a className="live-primary" href={featured ? `?collection=${featured.id}` : '#collections'} onClick={featured ? event => openCollection(event, featured.id) : undefined}>{featured ? 'View the latest game' : 'Browse the archive'} <ArrowUpRight size={18} /></a>
+              <a className="live-secondary" href="#collections">Explore all work <ArrowDown size={18} /></a>
             </div>
           </div>
           <div className="live-featured">{featured ? <a className="live-featured-link" href={`?collection=${featured.id}`} onClick={event => openCollection(event, featured.id)} aria-label={`View featured collection ${featured.name}`}>
             <div className="live-featured-image"><Cover album={featured} eager /></div>
-            <div className="live-featured-caption"><strong>{featured.name}</strong><span>{featured.category}</span><span>{featured.photoCount} photographs</span><span>{featured.dateLabel || 'From the archive'}</span></div>
+            <div className="live-featured-caption"><strong>{featured.name}</strong><span>{featured.category}</span><span>{featured.dateLabel || 'From the archive'}</span></div>
           </a> : <div className="live-featured-placeholder" aria-hidden="true"><span>Connecting to the live archive</span></div>}</div>
         </div>
       </section>
 
-      {recent.length > 0 && <section className="live-stories" aria-labelledby="stories-title">
-        <div className="live-stories-inner live-width">
-          <div className="live-stories-copy"><h2 id="stories-title">Latest games</h2><p>Three recent contact sheets from the field. Each one opens into its complete collection.</p><a href="#collections">Search every game <ArrowDown size={18} /></a></div>
-          <div className="live-story-list">{recent.map((album, index) => <article className="live-story" key={album.id} data-reveal-delay={index * 70}><a href={`?collection=${album.id}`} onClick={event => openCollection(event, album.id)} aria-label={`View ${album.name}`}><div className="live-story-image"><Cover album={album} eager={index === 0} /></div><div className="live-story-copy"><h3>{album.name}</h3><p>{album.category} · {album.photoCount} photographs · {album.dateLabel || 'From the archive'}</p><span aria-hidden="true"><ArrowUpRight size={20} /></span></div></a></article>)}</div>
-        </div>
+      {bento.length === 4 && <section className="live-interest" aria-labelledby="interest-title">
+        <div className="live-interest-heading live-width"><h2 id="interest-title">The game, from every angle.</h2><p>Four recent contact sheets. One live archive. Nothing staged.</p></div>
+        <div className="live-bento live-width">{bento.map((album, index) => <article className={`live-bento-card live-bento-card-${index + 1}`} key={album.id}><a href={`?collection=${album.id}`} onClick={event => openCollection(event, album.id)} aria-label={`View ${album.name}`}><div className="live-bento-image live-motion-image"><Cover album={album} eager={index < 2} /></div><div className="live-bento-copy"><h3>{album.name}</h3><p>{album.category}<span>{album.dateLabel || `${album.photoCount} photographs`}</span></p><ArrowUpRight size={20} aria-hidden="true" /></div></a></article>)}</div>
+      </section>}
+
+      {marqueeItems.length > 0 && <div className="live-marquee" aria-label={`Sports photographed: ${marqueeItems.join(', ')}`}><div className="live-marquee-track" aria-hidden="true">{[...marqueeItems, ...marqueeItems].map((item, index) => <span key={`${item}-${index}`}>{item}<i /></span>)}</div></div>}
+
+      {activeDispatch && <section className="live-dispatch live-width" aria-labelledby="dispatch-title">
+        <div className="live-dispatch-heading"><h2 id="dispatch-title">From the touchline</h2><div className="live-dispatch-controls"><button aria-label="Previous featured game" disabled={dispatches.length < 2} onClick={() => setDispatchIndex(index => (index - 1 + dispatches.length) % dispatches.length)}><ArrowLeft size={19} /></button><span>{safeDispatchIndex + 1} / {dispatches.length}</span><button aria-label="Next featured game" disabled={dispatches.length < 2} onClick={() => setDispatchIndex(index => (index + 1) % dispatches.length)}><ArrowRight size={19} /></button></div></div>
+        <div className="live-dispatch-stage"><div className="live-dispatch-image live-motion-image" key={activeDispatch.id}><Cover album={activeDispatch} /></div><div className="live-dispatch-copy"><h3>{activeDispatch.name}</h3><p>{activeDispatch.category} · {activeDispatch.photoCount} photographs · {activeDispatch.dateLabel || 'From the archive'}</p><a className="live-primary" href={`?collection=${activeDispatch.id}`} onClick={event => openCollection(event, activeDispatch.id)}>Open this collection <ArrowUpRight size={18} /></a></div></div>
+        <div className="live-dispatch-thumbs" aria-label="Choose a featured game">{dispatches.map((album, index) => <button key={album.id} className={index === safeDispatchIndex ? 'is-active' : ''} aria-label={`Show ${album.name}`} aria-pressed={index === safeDispatchIndex} onClick={() => setDispatchIndex(index)}><Cover album={album} decorative /></button>)}</div>
       </section>}
 
       <section id="collections" className="live-collections live-width" aria-labelledby="collections-title">
@@ -179,8 +180,8 @@ export default function LiveArchive({ mode, onAppearanceChange }) {
         {filtered.length > limit && <div className="live-more"><span>Showing {Math.min(limit, filtered.length)} of {filtered.length} collections</span><button onClick={() => setLimit(value => value + 18)}>More from the archive <ArrowDown size={18} /></button></div>}
         <div className="live-sync" role="status"><div><span>{error ? 'Waiting to reconnect' : archive ? (isStaticSnapshot ? 'Synced from Zonerama' : 'Live from Zonerama') : 'Connecting to Zonerama'}</span>{archive && <span>Updated {new Date(archive.updatedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>}<span className="live-refresh-note">{isStaticSnapshot ? 'Published hourly' : 'Refreshes every 5 minutes'}</span></div><button onClick={load} disabled={busy} aria-label="Refresh collections"><RefreshCw size={18} className={busy ? 'live-spinning' : ''} />{busy ? 'Refreshing' : 'Refresh'}</button></div>
       </section>
-      <section className="live-manifesto" aria-labelledby="approach-title"><div className="live-manifesto-inner live-width"><h2 id="approach-title">Beyond the score</h2><div className="live-manifesto-copy"><p>302 Edits follows the split seconds around the score: the release, the recovery, and the glance before the whistle.</p><p>The archive holds sport as it felt, not only how it finished.</p><a href={source} target="_blank" rel="noopener noreferrer">Enter the complete archive <ArrowUpRight size={17} /></a></div></div></section>
+      <section className="live-manifesto" aria-labelledby="approach-title"><div className="live-manifesto-inner live-width"><h2 id="approach-title">What the score cannot hold.</h2><p className="live-manifesto-statement" aria-label={manifesto}>{manifesto.split(' ').map((word, index) => <span className="live-manifesto-word" aria-hidden="true" key={`${word}-${index}`}>{word}{' '}</span>)}</p><div className="live-manifesto-foot"><p>The archive holds sport as it felt, not only how it finished.</p><a href={source} target="_blank" rel="noopener noreferrer">Enter the complete archive <ArrowUpRight size={17} /></a></div></div></section>
     </main>}
-    <footer className="live-footer"><div className="live-footer-inner live-width"><div className="live-footer-cta"><h2>See every game</h2><a className="live-primary" href={source} target="_blank" rel="noopener noreferrer">Open full archive <ArrowUpRight size={18} /></a></div><nav aria-label="Footer navigation"><a href={collectionId ? `${siteHome()}#collections` : '#collections'} onClick={event => { if (collectionId) openCollection(event, ''); }}>Search work</a><a href={source} target="_blank" rel="noopener noreferrer">Zonerama</a><button onClick={() => window.scrollTo({ top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' })}>Back to top <ArrowUp size={16} /></button></nav></div><div className="live-footer-meta live-width"><p>Independent sports photography. The moment stays.</p><span>302 Edits</span></div><a className="live-footer-name" href={siteHome()} onClick={event => openCollection(event, '')} aria-label="302 Edits home">302 Edits</a></footer>
+    <footer className="live-footer"><div className="live-footer-inner live-width"><div className="live-footer-cta"><h2>Keep the whole game.</h2><a className="live-primary" href={source} target="_blank" rel="noopener noreferrer">Open full archive <ArrowUpRight size={18} /></a></div><nav aria-label="Footer navigation"><a href={collectionId ? `${siteHome()}#collections` : '#collections'} onClick={event => { if (collectionId) openCollection(event, ''); }}>Search work</a><a href={source} target="_blank" rel="noopener noreferrer">Zonerama</a><button onClick={() => window.scrollTo({ top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' })}>Back to top <ArrowUp size={16} /></button></nav></div><div className="live-footer-meta live-width"><p>Independent sports photography. The moment stays.</p><span>302 Edits</span></div><a className="live-footer-name" href={siteHome()} onClick={event => openCollection(event, '')} aria-label="302 Edits home">302 Edits</a></footer>
   </div>;
 }

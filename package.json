@@ -6,6 +6,10 @@
     "backend",
     "frontend"
   ],
+  "overrides": {
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "start": "node scripts/dev.mjs",
@@ -21,6 +25,8 @@
     "verify": "npm test && npm run lint && npm run build && npm run test:browser"
   },
   "devDependencies": {
-    "@playwright/test": "^1.63.0"
+    "@playwright/test": "^1.63.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
   }
 }

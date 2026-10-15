@@ -108,38 +108,59 @@ test('landing page keeps photographs and archive controls useful on phones', asy
   await page.goto('/');
   await expect(page.locator('.live-card')).toHaveCount(18);
   for (const width of [320, 390, 600]) {
-    await page.setViewportSize({ width, height: 568 });
+    await page.setViewportSize({ width, height: 844 });
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     const layout = await page.evaluate(() => {
       const featured = document.querySelector('.live-featured').getBoundingClientRect();
+      const heading = document.querySelector('#portfolio-title');
+      const headingStyle = getComputedStyle(heading);
+      const headingBox = heading.getBoundingClientRect();
       const cards = [...document.querySelectorAll('.live-card')].slice(0, 2).map(card => card.getBoundingClientRect());
-      const storyList = document.querySelector('.live-story-list');
+      const bento = document.querySelector('.live-bento');
       return {
         featuredTop: featured.top,
         featuredWidth: featured.width,
+        headingLines: headingBox.height / parseFloat(headingStyle.lineHeight),
+        headingRight: headingBox.right,
         cardColumns: Math.round(cards[0].top) === Math.round(cards[1].top),
-        storiesScroll: storyList.scrollWidth > storyList.clientWidth,
+        bentoDense: getComputedStyle(bento).gridAutoFlow === 'dense',
         smallType: Math.min(...[...document.querySelectorAll('.live-card-meta, .live-featured-caption')].map(element => parseFloat(getComputedStyle(element).fontSize))),
       };
     });
-    expect(layout.featuredTop).toBeLessThan(540);
+    expect(layout.featuredTop).toBeLessThan(844);
     expect(layout.featuredWidth).toBeGreaterThanOrEqual(width - 32);
+    expect(layout.headingLines).toBeLessThanOrEqual(3.1);
+    expect(layout.headingRight).toBeLessThanOrEqual(width);
     expect(layout.cardColumns).toBe(true);
-    expect(layout.storiesScroll).toBe(true);
+    expect(layout.bentoDense).toBe(true);
     expect(layout.smallType).toBeGreaterThanOrEqual(14);
   }
+});
+
+test('touchline carousel advances through live collections with accessible controls', async ({ page }) => {
+  await page.route('**/api/zonerama', route => route.fulfill({ json: archive(Array.from({ length: 5 }, (_, i) => album(String(i), `Match dispatch ${i + 1}`))) }));
+  await page.goto('/');
+  await expect(page.locator('.live-dispatch-copy h3')).toHaveText('Match dispatch 1');
+  const next = page.getByRole('button', { name: 'Next featured game' });
+  const size = await next.evaluate(element => element.getBoundingClientRect().toJSON());
+  expect(size.width).toBeGreaterThanOrEqual(44);
+  expect(size.height).toBeGreaterThanOrEqual(44);
+  await next.click();
+  await expect(page.locator('.live-dispatch-copy h3')).toHaveText('Match dispatch 2');
+  await expect(page.getByRole('button', { name: 'Show Match dispatch 2' })).toHaveAttribute('aria-pressed', 'true');
 });
 
 test('scroll reveals settle and respond to reduced-motion changes', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.route('**/api/zonerama', route => route.fulfill({ json: archive(Array.from({ length: 18 }, (_, i) => album(String(i)))) }));
   await page.goto('/');
-  const card = page.locator('.live-card').last();
-  await expect(card).toBeAttached();
-  await card.evaluate(element => element.scrollIntoView({ behavior: 'instant', block: 'center' }));
-  await expect.poll(() => card.evaluate(element => element.getAnimations().length)).toBeGreaterThan(0);
+  const motionImage = page.locator('.live-motion-image').first();
+  await expect(motionImage).toBeAttached();
+  await expect.poll(() => motionImage.evaluate(element => { const style = getComputedStyle(element); return style.opacity !== '1' || style.transform !== 'none'; })).toBe(true);
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await expect.poll(() => page.evaluate(() => document.getAnimations().length)).toBe(0);
-  await expect(card).toHaveCSS('opacity', '1');
-  await expect(card).toHaveCSS('transform', 'none');
+  await expect(motionImage).toHaveCSS('opacity', '1');
+  await expect(motionImage).toHaveCSS('transform', 'none');
+  await expect(page.locator('.live-manifesto-word').first()).toHaveCSS('opacity', '1');
+  await expect(page.locator('.live-marquee-track')).toHaveCSS('animation-name', 'none');
 });
