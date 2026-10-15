@@ -112,6 +112,10 @@ test('landing page keeps photographs and archive controls useful on phones', asy
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     const layout = await page.evaluate(() => {
       const featured = document.querySelector('.live-featured').getBoundingClientRect();
+      const header = document.querySelector('.live-header').getBoundingClientRect();
+      const brand = document.querySelector('.live-brand').getBoundingClientRect();
+      const work = document.querySelector('.live-work-link').getBoundingClientRect();
+      const theme = document.querySelector('.live-theme').getBoundingClientRect();
       const heading = document.querySelector('#portfolio-title');
       const headingStyle = getComputedStyle(heading);
       const headingBox = heading.getBoundingClientRect();
@@ -120,6 +124,12 @@ test('landing page keeps photographs and archive controls useful on phones', asy
       return {
         featuredTop: featured.top,
         featuredWidth: featured.width,
+        brandOffset: Math.abs((brand.left + brand.width / 2) - innerWidth / 2),
+        headerAlignment: Math.max(
+          Math.abs((brand.top + brand.height / 2) - (header.top + header.height / 2)),
+          Math.abs((work.top + work.height / 2) - (header.top + header.height / 2)),
+          Math.abs((theme.top + theme.height / 2) - (header.top + header.height / 2)),
+        ),
         headingLines: headingBox.height / parseFloat(headingStyle.lineHeight),
         headingRight: headingBox.right,
         cardColumns: Math.round(cards[0].top) === Math.round(cards[1].top),
@@ -129,6 +139,8 @@ test('landing page keeps photographs and archive controls useful on phones', asy
     });
     expect(layout.featuredTop).toBeLessThan(844);
     expect(layout.featuredWidth).toBeGreaterThanOrEqual(width - 32);
+    expect(layout.brandOffset).toBeLessThanOrEqual(1);
+    expect(layout.headerAlignment).toBeLessThanOrEqual(1);
     expect(layout.headingLines).toBeLessThanOrEqual(3.1);
     expect(layout.headingRight).toBeLessThanOrEqual(width);
     expect(layout.cardColumns).toBe(true);
