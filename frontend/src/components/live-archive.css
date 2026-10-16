@@ -152,9 +152,10 @@
   backdrop-filter: blur(18px) saturate(1.2);
 }
 .live-brand {
-  grid-column: 2;
-  grid-row: 1;
-  justify-self: center;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   display: inline-flex;
   align-items: baseline;
   gap: 0.28em;
@@ -166,6 +167,7 @@
   letter-spacing: -0.02em;
   text-transform: uppercase;
 }
+.live-site .live-brand:active { transform: translate(-50%, -50%) scale(0.98); }
 .live-brand span:last-child { font-weight: 500; }
 .live-header nav { display: contents; }
 .live-work-link { grid-column: 1; grid-row: 1; justify-self: start; }
@@ -241,17 +243,6 @@
   letter-spacing: -0.065em;
   text-wrap: balance;
 }
-.live-inline-image {
-  width: clamp(78px, 9vw, 142px);
-  height: 0.58em;
-  margin-inline: 0.08em;
-  display: inline-block;
-  overflow: hidden;
-  border-radius: 999px;
-  vertical-align: 0.04em;
-  background: #080b09;
-}
-.live-inline-image img { width: 100%; height: 100%; display: block; object-fit: cover; filter: saturate(0.7) contrast(1.22); }
 .live-intro-lead { max-width: 32ch; margin-top: clamp(28px, 4vw, 52px); font-size: var(--step-lead); line-height: 1.42; color: var(--muted); }
 .live-intro-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 36px; }
 .live-primary {
@@ -447,7 +438,6 @@
   .live-intro { padding-block: 68px 112px; }
   .live-intro-layout { gap: 32px; }
   .live-hero-copy h1.max-w-6xl { max-width: 100%; font-size: clamp(3.25rem, 16.5vw, 4.35rem); line-height: 0.92; }
-  .live-inline-image { width: clamp(70px, 22vw, 92px); }
   .live-intro-lead { margin-top: 24px; font-size: 1.125rem; }
   .live-intro-actions { align-items: stretch; flex-direction: column; }
   .live-intro-actions .live-primary,

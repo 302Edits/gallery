@@ -145,7 +145,7 @@ export default function LiveArchive({ mode, onAppearanceChange }) {
       <section className="live-intro" aria-labelledby="portfolio-title">
         <div className="live-intro-layout live-width">
           <div className="live-hero-copy">
-            <h1 id="portfolio-title" className="max-w-6xl w-full">Hold the <span className="live-inline-image" aria-hidden="true">{featured && <Cover album={featured} eager decorative />}</span> game still.</h1>
+            <h1 id="portfolio-title" className="max-w-6xl w-full">Hold the game still.</h1>
             <p className="live-intro-lead">Independent sports photography built around movement, pressure, and the quiet after the play.</p>
             <div className="live-intro-actions">
               <a className="live-primary" href={featured ? `?collection=${featured.id}` : '#collections'} onClick={featured ? event => openCollection(event, featured.id) : undefined}>{featured ? 'View the latest game' : 'Browse the archive'} <ArrowUpRight size={18} /></a>

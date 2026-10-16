@@ -107,6 +107,8 @@ test('landing page keeps photographs and archive controls useful on phones', asy
   await page.route('**/api/zonerama', route => route.fulfill({ json: archive(Array.from({ length: 18 }, (_, i) => album(String(i), `Soccer event ${i}`))) }));
   await page.goto('/');
   await expect(page.locator('.live-card')).toHaveCount(18);
+  await expect(page.locator('#portfolio-title')).toHaveText('Hold the game still.');
+  await expect(page.locator('.live-inline-image')).toHaveCount(0);
   for (const width of [320, 390, 600]) {
     await page.setViewportSize({ width, height: 844 });
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
