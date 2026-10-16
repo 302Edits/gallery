@@ -40,7 +40,12 @@ export function createArchiveService(fetcher = fetch, now = Date.now) {
   return async () => {
     if (cached && now() - checkedAt < REFRESH_MS) return cached;
     pending ||= fetchArchive(fetcher).then(data => { cached = data; checkedAt = now(); return data; })
-      .catch(error => { if (cached) return { ...cached, stale: true }; throw error; }).finally(() => { pending = null; });
+      .catch(error => {
+        if (!cached) throw error;
+        cached = { ...cached, stale: true };
+        checkedAt = now();
+        return cached;
+      }).finally(() => { pending = null; });
     return pending;
   };
 }
@@ -99,7 +104,12 @@ export function createZoneramaHandler(fetcher = fetch, now = Date.now) {
     }
     if (entry.data && now() - entry.checkedAt < REFRESH_MS) return entry.data;
     entry.pending ||= fetchAlbum(album, fetcher).then(data => { entry.data = data; entry.checkedAt = now(); return data; })
-      .catch(error => { if (entry.data) return { ...entry.data, stale: true }; throw error; }).finally(() => { entry.pending = null; });
+      .catch(error => {
+        if (!entry.data) throw error;
+        entry.data = { ...entry.data, stale: true };
+        entry.checkedAt = now();
+        return entry.data;
+      }).finally(() => { entry.pending = null; });
     return entry.pending;
   }
   return async request => {

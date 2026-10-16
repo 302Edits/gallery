@@ -205,6 +205,13 @@ test('re-export retains recoverable prior artifact and rejects owner builds', as
   assert.ok((await fs.stat(next.outputPath)).isDirectory());
 });
 
+test('failed export handoff removes its temporary staging directory', async t => {
+  const f = await fixture(t);
+  const outputPath = path.join(f.root, 'missing-parent', 'site-output');
+  await assert.rejects(exportSite({ ...f.exportOptions, outputPath }), error => error.code === 'ENOENT');
+  assert.deepEqual((await fs.readdir(f.root)).filter(name => name.startsWith('.publish-staging-')), []);
+});
+
 test('legacy schema migration preserves records and creates a recovery copy', async t => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'sideline-migration-'));
   const Database = require('better-sqlite3');

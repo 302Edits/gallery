@@ -41,16 +41,17 @@ function createApp(options = {}) {
   const token = randomBytes(32).toString('hex');
   const app = express();
   const allowedOrigins = new Set(options.origins || [5001, 5173, 4173].flatMap(port => ['http://127.0.0.1:' + port, 'http://localhost:' + port]));
+  const allowedHostHeaders = new Set([...allowedOrigins].map(origin => new URL(origin).host));
+  for (const port of [5001, 5173, 4173]) for (const name of ['127.0.0.1', 'localhost', '[::1]']) allowedHostHeaders.add(name + ':' + port);
   app.disable('x-powered-by');
   app.use(helmet({ contentSecurityPolicy: false, strictTransportSecurity: false, crossOriginResourcePolicy: { policy: 'same-origin' } }));
   app.use((req, res, next) => {
     res.set('Cache-Control', 'no-store');
     let host, hostUrl;
     try { hostUrl = new URL('http://' + req.get('host')); host = hostUrl.hostname; } catch { return next(fail(403, 'Local computer access only.', 'FORBIDDEN')); }
-    const allowedHostHeaders = new Set([...allowedOrigins].map(origin => new URL(origin).host));
-    for (const name of ['127.0.0.1', 'localhost', '[::1]']) allowedHostHeaders.add(name + ':' + req.socket.localPort);
+    const loopbackHost = ['127.0.0.1', 'localhost', '[::1]'].some(name => req.get('host') === name + ':' + req.socket.localPort);
     const local = ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress);
-    if (!local || !['127.0.0.1', 'localhost', '[::1]'].includes(host) || !allowedHostHeaders.has(req.get('host')) || hostUrl.username || hostUrl.password || req.get('sec-fetch-site') === 'cross-site' || (req.get('origin') && !allowedOrigins.has(req.get('origin')))) return next(fail(403, 'Local computer access only. Open the owner manager on localhost.', 'FORBIDDEN'));
+    if (!local || !['127.0.0.1', 'localhost', '[::1]'].includes(host) || (!allowedHostHeaders.has(req.get('host')) && !loopbackHost) || hostUrl.username || hostUrl.password || req.get('sec-fetch-site') === 'cross-site' || (req.get('origin') && !allowedOrigins.has(req.get('origin')))) return next(fail(403, 'Local computer access only. Open the owner manager on localhost.', 'FORBIDDEN'));
     next();
   });
   app.use(express.json({ limit: '32kb' }));

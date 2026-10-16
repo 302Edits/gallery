@@ -1,12 +1,8 @@
 import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ArrowUpRight, Camera, Palette, RefreshCw, Search, X } from 'lucide-react';
-import { useGSAP } from '@gsap/react';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import './live-archive.css';
 const LiveAlbum = lazy(() => import('./LiveAlbum'));
 import { isStaticSnapshot, siteHome, zoneramaUrl } from '../utils/zonerama-url';
-gsap.registerPlugin(useGSAP, ScrollTrigger);
 const source = 'https://eu.zonerama.com/302Edits/2037673';
 const interval = 5 * 60 * 1000;
 const manifesto = 'A match is more than the result. It is pressure, release, recovery, and the glance before the whistle. 302 Edits keeps the seconds that make the score matter.';
@@ -105,28 +101,36 @@ export default function LiveArchive({ mode, onAppearanceChange }) {
   const safeDispatchIndex = dispatches.length ? dispatchIndex % dispatches.length : 0;
   const activeDispatch = dispatches[safeDispatchIndex] || featured;
   const marqueeItems = categories.slice(1);
-  useGSAP(() => {
-    if (collectionId || !site.current) return undefined;
-    const media = gsap.matchMedia();
-    media.add('(prefers-reduced-motion: no-preference)', () => {
-      const heroItems = gsap.utils.toArray('.live-hero-copy > *');
-      const featuredLink = site.current.querySelector('.live-featured-link');
-      if (heroItems.length) gsap.from(heroItems, { y: 32, opacity: 0, duration: 0.9, stagger: 0.08, ease: 'power3.out' });
-      if (featuredLink) gsap.from(featuredLink, { scale: 0.94, opacity: 0, duration: 1.1, ease: 'power3.out' });
-      gsap.utils.toArray('.live-motion-image').forEach(element => {
-        gsap.timeline({ scrollTrigger: { trigger: element, start: 'top 94%', end: 'bottom 6%', scrub: 0.7 } })
-          .fromTo(element, { scale: 0.82, opacity: 0.35, filter: 'brightness(0.55)' }, { scale: 1, opacity: 1, filter: 'brightness(1)', duration: 0.45, ease: 'none' })
-          .to(element, { scale: 0.96, opacity: 0.22, filter: 'brightness(0.48)', duration: 0.55, ease: 'none' });
-      });
-      const words = gsap.utils.toArray('.live-manifesto-word');
-      if (words.length) gsap.fromTo(words, { opacity: 0.1 }, { opacity: 1, stagger: 0.035, ease: 'none', scrollTrigger: { trigger: '.live-manifesto-statement', start: 'top 78%', end: 'bottom 42%', scrub: 0.8 } });
-    });
-    media.add('(prefers-reduced-motion: reduce)', () => {
-      const staticTargets = gsap.utils.toArray('.live-motion-image, .live-manifesto-word, .live-hero-copy > *, .live-featured-link');
-      if (staticTargets.length) gsap.set(staticTargets, { clearProps: 'all', opacity: 1, scale: 1, filter: 'none' });
-    });
-    return () => media.revert();
-  }, { scope: site, dependencies: [collectionId, archive?.updatedAt, filtered.length, limit], revertOnUpdate: true });
+  useEffect(() => {
+    const root = site.current;
+    if (collectionId || !root || !archive) return undefined;
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let disposed = false;
+    let context = null;
+    let generation = 0;
+    const clear = () => { context?.revert(); context = null; };
+    const enhance = async () => {
+      const current = ++generation;
+      clear();
+      if (reducedMotion.matches) return;
+      const [{ default: gsap }, { ScrollTrigger }] = await Promise.all([import('gsap'), import('gsap/ScrollTrigger')]);
+      if (disposed || reducedMotion.matches || current !== generation) return;
+      gsap.registerPlugin(ScrollTrigger);
+      context = gsap.context(() => {
+        gsap.utils.toArray('.live-motion-image').forEach(element => {
+          gsap.timeline({ scrollTrigger: { trigger: element, start: 'top 94%', end: 'bottom 6%', scrub: 0.7 } })
+            .fromTo(element, { scale: 0.82, opacity: 0.35, filter: 'brightness(0.55)' }, { scale: 1, opacity: 1, filter: 'brightness(1)', duration: 0.45, ease: 'none' })
+            .to(element, { scale: 0.96, opacity: 0.22, filter: 'brightness(0.48)', duration: 0.55, ease: 'none' });
+        });
+        const words = gsap.utils.toArray('.live-manifesto-word');
+        if (words.length) gsap.fromTo(words, { opacity: 0.1 }, { opacity: 1, stagger: 0.035, ease: 'none', scrollTrigger: { trigger: '.live-manifesto-statement', start: 'top 78%', end: 'bottom 42%', scrub: 0.8 } });
+      }, root);
+    };
+    const update = () => { enhance().catch(() => clear()); };
+    update();
+    reducedMotion.addEventListener('change', update);
+    return () => { disposed = true; generation++; reducedMotion.removeEventListener('change', update); clear(); };
+  }, [collectionId, archive]);
   function filter(setter, value) { setter(value); setLimit(18); }
   return <div className="live-site" ref={site}>
     <a className="skip-link" href={collectionId ? "#collection-top" : "#collections"}>Skip to collections</a>

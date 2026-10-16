@@ -64,54 +64,60 @@ async function exportSite({ db, projectRoot, outputPath }) {
 
   const staging = path.join(projectRoot, '.publish-staging-' + randomUUID());
   await fs.mkdir(staging);
-  await fs.cp(buildPath, staging, { recursive: true });
-  await fs.mkdir(path.join(staging, 'data', 'albums'), { recursive: true });
-  const galleries = [];
-  for (const { gallery, photos } of albums) {
-    const views = photos.map(publicPhoto);
-    const cover = views.find(photo => photo.id === gallery.coverPhotoId) || views[0] || null;
-    galleries.push({ id: gallery.id, name: gallery.name, description: gallery.description,
-      sport: gallery.sport, location: gallery.location, eventDate: gallery.eventDate,
-      themeColor: gallery.themeColor, themePreset: gallery.themePreset,
-      externalUrl: gallery.externalUrl || '',
-      createdAt: gallery.createdAt, publishedAt: gallery.publishedAt,
-      coverPhotoId: cover?.id || null, photoCount: views.length, cover });
-    await fs.writeFile(path.join(staging, 'data', 'albums', gallery.id + '.json'), JSON.stringify(views));
-    for (let index = 0; index < photos.length; index++) {
-      const photo = photos[index];
-      const view = views[index];
-      const destination = path.join(staging, 'images', photo.id);
-      await fs.mkdir(destination, { recursive: true });
-      for (const [source, url] of [[photo.filePath, view.originalUrl], [photo.thumbnailPath, view.thumbnailUrl], [photo.previewPath, view.previewUrl]]) {
-        const target = path.join(staging, url.slice(1));
-        await fs.mkdir(path.dirname(target), { recursive: true });
-        // Originals are immutable. Hard links avoid duplicating a 120 GB archive
-        // on the owner's disk; copy fallback supports different filesystems.
-        try { await fs.link(source, target); }
-        catch { await fs.copyFile(source, target); }
+  try {
+    await fs.cp(buildPath, staging, { recursive: true });
+    await fs.mkdir(path.join(staging, 'data', 'albums'), { recursive: true });
+    const galleries = [];
+    for (const { gallery, photos } of albums) {
+      const views = photos.map(publicPhoto);
+      const cover = views.find(photo => photo.id === gallery.coverPhotoId) || views[0] || null;
+      galleries.push({ id: gallery.id, name: gallery.name, description: gallery.description,
+        sport: gallery.sport, location: gallery.location, eventDate: gallery.eventDate,
+        themeColor: gallery.themeColor, themePreset: gallery.themePreset,
+        externalUrl: gallery.externalUrl || '',
+        createdAt: gallery.createdAt, publishedAt: gallery.publishedAt,
+        coverPhotoId: cover?.id || null, photoCount: views.length, cover });
+      await fs.writeFile(path.join(staging, 'data', 'albums', gallery.id + '.json'), JSON.stringify(views));
+      for (let index = 0; index < photos.length; index++) {
+        const photo = photos[index];
+        const view = views[index];
+        const destination = path.join(staging, 'images', photo.id);
+        await fs.mkdir(destination, { recursive: true });
+        for (const [source, url] of [[photo.filePath, view.originalUrl], [photo.thumbnailPath, view.thumbnailUrl], [photo.previewPath, view.previewUrl]]) {
+          const target = path.join(staging, url.slice(1));
+          await fs.mkdir(path.dirname(target), { recursive: true });
+          // Originals are immutable. Hard links avoid duplicating a 120 GB archive
+          // on the owner's disk; copy fallback supports different filesystems.
+          try { await fs.link(source, target); }
+          catch { await fs.copyFile(source, target); }
+        }
       }
     }
+    await fs.writeFile(path.join(staging, 'data', 'galleries.json'), JSON.stringify(galleries));
+    await fs.writeFile(path.join(staging, '_headers'), `/*\n  X-Content-Type-Options: nosniff\n  X-Frame-Options: DENY\n  Referrer-Policy: strict-origin-when-cross-origin\n  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.zonerama.com; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'\n/data/*\n  Cache-Control: public, max-age=0, must-revalidate\n/images/*\n  Cache-Control: public, max-age=31536000, immutable\n/originals/*\n  Cache-Control: public, max-age=31536000, immutable\n  Content-Disposition: attachment\n/assets/*\n  Cache-Control: public, max-age=31536000, immutable\n`);
+    await fs.writeFile(path.join(staging, '_redirects'), '/api/v1/* /not-found 404\n');
+    const files = await walk(staging);
+    let totalBytes = 0;
+    for (const file of files) {
+      const stat = await fs.stat(path.join(staging, file));
+      if (stat.size > MAX_ASSET_BYTES) throw error('A generated manifest exceeds the per-file host limit. The last public export is unchanged.');
+      totalBytes += stat.size;
+    }
+    if (files.length > MAX_FILES) throw error('The generated site exceeds 20,000 files. The last public export is unchanged.');
+    let previousOutputPath = null;
+    try {
+      await fs.lstat(outputPath);
+      previousOutputPath = outputPath + '-previous-' + randomUUID();
+      await fs.rename(outputPath, previousOutputPath);
+    } catch (err) { if (err.code !== 'ENOENT') throw err; }
+    try { await fs.rename(staging, outputPath); }
+    catch (err) { if (previousOutputPath) await fs.rename(previousOutputPath, outputPath); throw err; }
+    return { outputPath, fileCount: files.length, totalBytes, galleryCount: galleries.length, previousOutputPath };
+  } catch (failure) {
+    try { await fs.rm(staging, { recursive: true, force: true }); }
+    catch (cleanupError) { if (!failure.cause) failure.cause = cleanupError; }
+    throw failure;
   }
-  await fs.writeFile(path.join(staging, 'data', 'galleries.json'), JSON.stringify(galleries));
-  await fs.writeFile(path.join(staging, '_headers'), `/*\n  X-Content-Type-Options: nosniff\n  X-Frame-Options: DENY\n  Referrer-Policy: strict-origin-when-cross-origin\n  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.zonerama.com; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'\n/data/*\n  Cache-Control: public, max-age=0, must-revalidate\n/images/*\n  Cache-Control: public, max-age=31536000, immutable\n/originals/*\n  Cache-Control: public, max-age=31536000, immutable\n  Content-Disposition: attachment\n/assets/*\n  Cache-Control: public, max-age=31536000, immutable\n`);
-  await fs.writeFile(path.join(staging, '_redirects'), '/api/v1/* /not-found 404\n');
-  const files = await walk(staging);
-  let totalBytes = 0;
-  for (const file of files) {
-    const stat = await fs.stat(path.join(staging, file));
-    if (stat.size > MAX_ASSET_BYTES) throw error('A generated manifest exceeds the per-file host limit. The last public export is unchanged.');
-    totalBytes += stat.size;
-  }
-  if (files.length > MAX_FILES) throw error('The generated site exceeds 20,000 files. The last public export is unchanged.');
-  let previousOutputPath = null;
-  try {
-    await fs.lstat(outputPath);
-    previousOutputPath = outputPath + '-previous-' + randomUUID();
-    await fs.rename(outputPath, previousOutputPath);
-  } catch (err) { if (err.code !== 'ENOENT') throw err; }
-  try { await fs.rename(staging, outputPath); }
-  catch (err) { if (previousOutputPath) await fs.rename(previousOutputPath, outputPath); throw err; }
-  return { outputPath, fileCount: files.length, totalBytes, galleryCount: galleries.length, previousOutputPath };
 }
 
 module.exports = { exportSite, checkPhotoAssets, publicPhoto, MAX_ASSET_BYTES, MAX_FILES };

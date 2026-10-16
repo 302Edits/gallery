@@ -91,6 +91,7 @@ export default function LiveAlbum({ id, onBack }) {
     observer.observe(element); return () => observer.disconnect();
   }, [album, limit]);
   const rows = useMemo(() => photoRows(album?.photos.slice(0, limit) || [], width, width < 600 ? compact ? 145 : 245 : compact ? 210 : 340, width < 600 ? 8 : 12, width < 600 ? compact ? 3 : 2 : Infinity), [album, limit, width, compact]);
+  const photoNumbers = useMemo(() => new Map((album?.photos || []).map((photo, index) => [photo.id, index + 1])), [album]);
   async function download(photo) {
     if (saving || !album?.downloadable) return;
     if (/Instagram/i.test(navigator.userAgent)) { setSavePhoto(photo); return; }
@@ -129,10 +130,13 @@ export default function LiveAlbum({ id, onBack }) {
     {error && <div className="collection-notice live-width" role="alert"><p>{error}</p><button onClick={load} disabled={busy}>Try again <RefreshCw size={15} /></button></div>}
     {downloadError && !viewerId && <div className="collection-notice live-width" role="alert">{downloadError}</div>}
     {!album && busy && <div className="collection-loading live-width" role="status"><div /><div /><div /><span className="sr-only">Loading photographs</span></div>}
-    {album && <><section ref={grid} className="collection-photos live-width" aria-label="Photographs"><div className="collection-rows">{rows.map(row => <div className="collection-row" key={row.photos[0].id} style={{ height: row.height, gap: width < 600 ? 8 : 12 }}>{row.photos.map(photo => <article className="collection-frame" key={photo.id} style={{ width: row.height * photo.width / photo.height, '--arrival': `${Math.min(row.photos.indexOf(photo), 3) * 70}ms` }}>
-      <button className="collection-open" onClick={() => { setDownloadError(''); setViewerId(photo.id); }} aria-label={`Maximize photograph ${album.photos.indexOf(photo) + 1}`}><Photograph photo={photo} eager={album.photos.indexOf(photo) < 6} name={`${album.name}, photograph ${album.photos.indexOf(photo) + 1}`} /><span className="collection-frame-expand" aria-hidden="true"><Maximize size={18} /></span></button>
-      {album.downloadable && <button className="collection-frame-download" aria-label={`Download photograph ${album.photos.indexOf(photo) + 1}`} onClick={() => download(photo)} disabled={saving}><Download size={17} /></button>}
-    </article>)}</div>)}</div></section>
+    {album && <><section ref={grid} className="collection-photos live-width" aria-label="Photographs"><div className="collection-rows">{rows.map(row => <div className="collection-row" key={row.photos[0].id} style={{ height: row.height, gap: width < 600 ? 8 : 12 }}>{row.photos.map((photo, rowIndex) => {
+      const number = photoNumbers.get(photo.id);
+      return <article className="collection-frame" key={photo.id} style={{ width: row.height * photo.width / photo.height, '--arrival': `${Math.min(rowIndex, 3) * 70}ms` }}>
+        <button className="collection-open" onClick={() => { setDownloadError(''); setViewerId(photo.id); }} aria-label={`Maximize photograph ${number}`}><Photograph photo={photo} eager={number <= 6} name={`${album.name}, photograph ${number}`} /><span className="collection-frame-expand" aria-hidden="true"><Maximize size={18} /></span></button>
+        {album.downloadable && <button className="collection-frame-download" aria-label={`Download photograph ${number}`} onClick={() => download(photo)} disabled={saving}><Download size={17} /></button>}
+      </article>;
+    })}</div>)}</div></section>
       {!album.photos.length && <div className="live-empty"><h2>This collection is waiting for its first photograph.</h2><p>New photographs will appear here automatically.</p></div>}
       <div ref={sentinel} className="collection-end live-width">{limit < album.photos.length ? <><p>{Math.min(limit, album.photos.length)} of {album.photos.length} photographs</p><button onClick={() => setLimit(value => value + 24)}>Continue exploring <ArrowRight size={16} /></button></> : <><Check size={20} /><p>All {album.photos.length} photographs</p><button onClick={() => window.scrollTo({ top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' })}>Back to top <ArrowUp size={16} /></button></>}</div>
     </>}

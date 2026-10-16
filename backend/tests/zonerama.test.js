@@ -32,6 +32,8 @@ test('refresh coalesces requests, caches successes and retains last good data on
   await read(); assert.equal(calls, 1);
   time += REFRESH_MS; const refreshed = await read(); assert.equal(refreshed.albums[0].id, '2');
   fail = true; time += REFRESH_MS; const stale = await read(); assert.equal(stale.stale, true); assert.equal(stale.updatedAt, refreshed.updatedAt); assert.equal(stale.albums[0].id, '2');
+  await read(); assert.equal(calls, 3);
+  fail = false; time += REFRESH_MS; const recovered = await read(); assert.equal(calls, 4); assert.equal(recovered.stale, false);
 });
 test('malformed and stalled pagination never replace a complete archive', async () => {
   const { fetchArchive } = await adapter;
@@ -55,6 +57,24 @@ test('photo feed keeps proportions, skips ads and rejects untrusted image hosts'
     return Response.json(offsets.length === 1 ? { items: [{ banner: true }, photoItem(42)], isEnd: false } : { items: [photoItem(43)], isEnd: true });
   });
   assert.deepEqual(offsets, ['0', '2']); assert.equal(result.photos.length, 2); assert.equal(result.downloadable, true);
+});
+test('stale album data is cached during an upstream outage and refreshes after the interval', async () => {
+  const { createZoneramaHandler, REFRESH_MS } = await adapter;
+  let time = 1, photoCalls = 0, fail = false;
+  const handle = createZoneramaHandler(async url => {
+    if (url.includes('AlbumsInTab')) return Response.json({ items: [{ html: tile('1') }], isEnd: true });
+    if (url.includes('PhotosInAlbum')) {
+      photoCalls++;
+      if (fail) throw new Error('offline');
+      return Response.json({ items: [photoItem(42)], isEnd: true });
+    }
+    return new Response('<meta property="znrm:downloadable" content="true" />');
+  }, () => time);
+  const get = () => handle(new Request('https://example.com/api/zonerama/albums/1'));
+  assert.equal((await get()).status, 200); assert.equal(photoCalls, 1);
+  fail = true; time += REFRESH_MS; assert.equal((await (await get()).json()).stale, true); assert.equal(photoCalls, 2);
+  assert.equal((await (await get()).json()).stale, true); assert.equal(photoCalls, 2);
+  fail = false; time += REFRESH_MS; assert.equal((await (await get()).json()).stale, false); assert.equal(photoCalls, 3);
 });
 test('download route validates collection, photo membership and permissions before streaming exact bytes', async () => {
   const { createZoneramaHandler } = await adapter;
