@@ -5,6 +5,7 @@ const LiveAlbum = lazy(() => import('./LiveAlbum'));
 import { isStaticSnapshot, siteHome, zoneramaUrl } from '../utils/zonerama-url';
 const source = 'https://eu.zonerama.com/302Edits/2037673';
 const interval = 5 * 60 * 1000;
+const archiveCacheKey = '302edits.archive.v1';
 const manifesto = 'A match is more than the result. It is pressure, release, recovery, and the glance before the whistle. 302 Edits keeps the seconds that make the score matter.';
 const themes = [
   { id: 'paper', name: 'Paper', colors: ['#f1f1ef', '#e5e5e1', '#1c1c1c'] },
@@ -14,13 +15,25 @@ const themes = [
   { id: 'carbon', name: 'Charcoal', colors: ['#242424', '#303030', '#f1f1ef'] },
   { id: 'forest', name: 'Forest', colors: ['#101a14', '#1c2921', '#edf0ec'] },
 ];
+function readArchiveCache() {
+  try {
+    const data = JSON.parse(sessionStorage.getItem(archiveCacheKey));
+    return Array.isArray(data?.albums) && data.updatedAt ? data : null;
+  } catch { return null; }
+}
+function writeArchiveCache(data) {
+  try { sessionStorage.setItem(archiveCacheKey, JSON.stringify(data)); } catch { /* Caching is an optional enhancement. */ }
+}
 function Cover({ album, eager = false, decorative = false }) {
   const [failedUrl, setFailedUrl] = useState('');
-  return failedUrl === album.cover ? <span className="live-cover-fallback" aria-hidden={decorative || undefined}><Camera size={32} />Preview unavailable</span> : <img src={album.cover} alt={decorative ? '' : `${album.name} contact sheet`} width="1600" height="800" loading={eager ? 'eager' : 'lazy'} fetchPriority={eager ? 'high' : undefined} decoding={eager ? 'sync' : 'async'} referrerPolicy="no-referrer" onError={() => setFailedUrl(album.cover)} />;
+  const [loaded, setLoaded] = useState(false);
+  return failedUrl === album.cover ? <span className="live-cover-fallback" aria-hidden={decorative || undefined}><Camera size={32} />Preview unavailable</span> : <img className={`live-cover${loaded ? ' is-loaded' : ''}`} src={album.cover} alt={decorative ? '' : `${album.name} contact sheet`} width="1600" height="800" loading={eager ? 'eager' : 'lazy'} fetchPriority={eager ? 'high' : undefined} decoding="async" referrerPolicy="no-referrer" onLoad={() => setLoaded(true)} onError={() => setFailedUrl(album.cover)} />;
 }
 export default function LiveArchive({ mode, onAppearanceChange }) {
   const [collectionId, setCollectionId] = useState(() => new URLSearchParams(window.location.search).get('collection') || '');
   const archiveScroll = useRef(0);
+  const previousCollectionId = useRef(collectionId);
+  const pendingArchiveAnchor = useRef(!collectionId && window.location.hash === '#collections');
   const site = useRef(null);
   const themePicker = useRef(null);
   const [themeOpen, setThemeOpen] = useState(false);
@@ -40,11 +53,18 @@ export default function LiveArchive({ mode, onAppearanceChange }) {
     const pop = () => setCollectionId(new URLSearchParams(window.location.search).get('collection') || '');
     window.addEventListener('popstate', pop); return () => window.removeEventListener('popstate', pop);
   }, []);
+  useEffect(() => {
+    const previous = window.history.scrollRestoration;
+    window.history.scrollRestoration = 'manual';
+    return () => { window.history.scrollRestoration = previous; };
+  }, []);
   useLayoutEffect(() => {
-    window.scrollTo({ top: collectionId ? 0 : archiveScroll.current, behavior: 'instant' });
+    const previous = previousCollectionId.current;
+    previousCollectionId.current = collectionId;
+    if (previous !== collectionId || collectionId) window.scrollTo({ top: collectionId ? 0 : archiveScroll.current, behavior: 'instant' });
     if (!collectionId) document.title = '302 Edits — The moment stays';
   }, [collectionId]);
-  const [archive, setArchive] = useState(null);
+  const [archive, setArchive] = useState(readArchiveCache);
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState('');
   const [query, setQuery] = useState('');
@@ -59,21 +79,22 @@ export default function LiveArchive({ mode, onAppearanceChange }) {
     const timeout = setTimeout(() => controller.abort(), 25000);
     setBusy(true);
     try {
-      const response = await fetch(zoneramaUrl(), { signal: controller.signal, cache: 'no-store' });
+      const response = await fetch(zoneramaUrl(), { signal: controller.signal, cache: isStaticSnapshot ? 'default' : 'no-store' });
       if (!response.ok) throw new Error('The connection to Zonerama is taking a break.');
       const data = await response.json();
       if (!Array.isArray(data.albums) || !data.updatedAt) throw new Error('The live collection is unavailable.');
-      setArchive(data); setError(data.stale ? 'Showing the last successful update. We’ll reconnect automatically.' : '');
+      writeArchiveCache(data); setArchive(data); setError(data.stale ? 'Showing the last successful update. We’ll reconnect automatically.' : '');
     } catch (failure) { if (!controller.signal.aborted || request.current === controller) setError(failure.name === 'AbortError' ? 'The connection timed out. Please try again.' : failure.message); }
     finally { clearTimeout(timeout); if (request.current === controller) { request.current = null; setBusy(false); } }
   }, []);
   useEffect(() => {
     document.title = '302 Edits — The moment stays';
-    const initial = setTimeout(load, 0);
+    let active = true;
+    queueMicrotask(() => { if (active) load(); });
     const timer = setInterval(() => { if (!document.hidden) load(); }, interval);
     const visible = () => { if (!document.hidden) load(); };
     document.addEventListener('visibilitychange', visible);
-    return () => { clearTimeout(initial); clearInterval(timer); document.removeEventListener('visibilitychange', visible); const active = request.current; request.current = null; active?.abort(); };
+    return () => { active = false; clearInterval(timer); document.removeEventListener('visibilitychange', visible); const current = request.current; request.current = null; current?.abort(); };
   }, [load]);
   useEffect(() => { document.documentElement.dataset.theme = mode; }, [mode]);
   useEffect(() => {
@@ -101,10 +122,16 @@ export default function LiveArchive({ mode, onAppearanceChange }) {
   const safeDispatchIndex = dispatches.length ? dispatchIndex % dispatches.length : 0;
   const activeDispatch = dispatches[safeDispatchIndex] || featured;
   const marqueeItems = categories.slice(1);
+  useLayoutEffect(() => {
+    if (!archive || collectionId || !pendingArchiveAnchor.current) return;
+    pendingArchiveAnchor.current = false;
+    document.getElementById('collections')?.scrollIntoView({ behavior: 'instant', block: 'start' });
+  }, [archive, collectionId]);
   useEffect(() => {
     const root = site.current;
     if (collectionId || !root || !archive) return undefined;
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const coarsePointer = window.matchMedia('(pointer: coarse)');
     let disposed = false;
     let context = null;
     let generation = 0;
@@ -112,9 +139,9 @@ export default function LiveArchive({ mode, onAppearanceChange }) {
     const enhance = async () => {
       const current = ++generation;
       clear();
-      if (reducedMotion.matches) return;
+      if (reducedMotion.matches || coarsePointer.matches) return;
       const [{ default: gsap }, { ScrollTrigger }] = await Promise.all([import('gsap'), import('gsap/ScrollTrigger')]);
-      if (disposed || reducedMotion.matches || current !== generation) return;
+      if (disposed || reducedMotion.matches || coarsePointer.matches || current !== generation) return;
       gsap.registerPlugin(ScrollTrigger);
       context = gsap.context(() => {
         gsap.utils.toArray('.live-motion-image').forEach(element => {
@@ -129,12 +156,13 @@ export default function LiveArchive({ mode, onAppearanceChange }) {
     const update = () => { enhance().catch(() => clear()); };
     update();
     reducedMotion.addEventListener('change', update);
-    return () => { disposed = true; generation++; reducedMotion.removeEventListener('change', update); clear(); };
+    coarsePointer.addEventListener('change', update);
+    return () => { disposed = true; generation++; reducedMotion.removeEventListener('change', update); coarsePointer.removeEventListener('change', update); clear(); };
   }, [collectionId, archive]);
   function filter(setter, value) { setter(value); setLimit(18); }
   return <div className="live-site" ref={site}>
     <a className="skip-link" href={collectionId ? "#collection-top" : "#collections"}>Skip to collections</a>
-    <header className="live-header live-width">
+    <header className="live-header live-width" data-loading={busy || undefined}>
       <a className="live-brand" href={siteHome()} onClick={event => openCollection(event, '')} aria-label="302 Edits home"><span>302</span><span>Edits</span></a>
       <nav aria-label="Main navigation"><a className="live-work-link" href={collectionId ? `${siteHome()}#collections` : "#collections"} onClick={event => { if (collectionId) openCollection(event, ''); }}>Work{albums.length ? ` (${albums.length})` : ''}</a>
         <div className="live-nav-actions"><a className="live-source-link" href={source} target="_blank" rel="noopener noreferrer">Full archive <ArrowUpRight size={15} /></a>
@@ -155,13 +183,13 @@ export default function LiveArchive({ mode, onAppearanceChange }) {
           <div className="live-featured">{featured ? <a className="live-featured-link" href={`?collection=${featured.id}`} onClick={event => openCollection(event, featured.id)} aria-label={`View featured collection ${featured.name}`}>
             <div className="live-featured-image"><Cover album={featured} eager /></div>
             <div className="live-featured-caption"><strong>{featured.name}</strong><span>{featured.category}</span><span>{featured.dateLabel || 'From the archive'}</span></div>
-          </a> : <div className="live-featured-placeholder" aria-hidden="true"><span>Connecting to the live archive</span></div>}</div>
+          </a> : <div className="live-featured-placeholder" role="status"><span>Loading the latest work</span></div>}</div>
         </div>
       </section>
 
       {bento.length === 4 && <section className="live-interest" aria-labelledby="interest-title">
         <div className="live-interest-heading live-width"><h2 id="interest-title">The game, from every angle.</h2><p>Four recent contact sheets. One live archive. Nothing staged.</p></div>
-        <div className="live-bento live-width">{bento.map((album, index) => <article className={`live-bento-card live-bento-card-${index + 1}`} key={album.id}><a href={`?collection=${album.id}`} onClick={event => openCollection(event, album.id)} aria-label={`View ${album.name}`}><div className="live-bento-image live-motion-image"><Cover album={album} eager={index < 2} /></div><div className="live-bento-copy"><h3>{album.name}</h3><p>{album.category}<span>{album.dateLabel || `${album.photoCount} photographs`}</span></p><ArrowUpRight size={20} aria-hidden="true" /></div></a></article>)}</div>
+        <div className="live-bento live-width">{bento.map((album, index) => <article className={`live-bento-card live-bento-card-${index + 1}`} key={album.id}><a href={`?collection=${album.id}`} onClick={event => openCollection(event, album.id)} aria-label={`View ${album.name}`}><div className="live-bento-image live-motion-image"><Cover album={album} /></div><div className="live-bento-copy"><h3>{album.name}</h3><p>{album.category}<span>{album.dateLabel || `${album.photoCount} photographs`}</span></p><ArrowUpRight size={20} aria-hidden="true" /></div></a></article>)}</div>
       </section>}
 
       {marqueeItems.length > 0 && <div className="live-marquee" aria-label={`Sports photographed: ${marqueeItems.join(', ')}`}><div className="live-marquee-track" aria-hidden="true">{[...marqueeItems, ...marqueeItems].map((item, index) => <span key={`${item}-${index}`}>{item}<i /></span>)}</div></div>}
@@ -172,7 +200,7 @@ export default function LiveArchive({ mode, onAppearanceChange }) {
         <div className="live-dispatch-thumbs" aria-label="Choose a featured game">{dispatches.map((album, index) => <button key={album.id} className={index === safeDispatchIndex ? 'is-active' : ''} aria-label={`Show ${album.name}`} aria-pressed={index === safeDispatchIndex} onClick={() => setDispatchIndex(index)}><Cover album={album} decorative /></button>)}</div>
       </section>}
 
-      <section id="collections" className="live-collections live-width" aria-labelledby="collections-title">
+      <section id="collections" className="live-collections live-width" aria-labelledby="collections-title" aria-busy={busy}>
         <div className="live-collection-title"><h2 id="collections-title">The live archive</h2><p className="live-totals">{archive ? `${albums.length} collections, ${photoCount.toLocaleString()} photographs` : 'Connecting to the archive'}</p></div>
         <div className="live-toolbar">
           <div className="live-search-sort"><label className="live-search"><Search size={20} /><input aria-label="Search collections" type="search" placeholder="Find an event or date" value={query} onChange={event => filter(setQuery, event.target.value)} /></label><select className="live-mobile-sport" aria-label="Filter by sport" value={category} onChange={event => filter(setCategory, event.target.value)}>{categories.map(item => <option key={item} value={item}>{item === 'All' ? 'All sports' : item}</option>)}</select><select aria-label="Sort collections" value={sort} onChange={event => filter(setSort, event.target.value)}><option value="source">Source order</option><option value="oldest">Oldest first</option><option value="name">A–Z</option></select></div>
@@ -180,7 +208,7 @@ export default function LiveArchive({ mode, onAppearanceChange }) {
         </div>
         {error && <div className="live-error" role="alert"><p>{error} {archive ? 'Your last loaded collections are still available.' : 'You can still visit the complete archive on Zonerama.'}</p><a href={source} target="_blank" rel="noopener noreferrer">Open Zonerama <ArrowUpRight size={18} /></a></div>}
         {(query || category !== 'All') && <div className="live-result-count">{filtered.length} collections found<button onClick={() => { setQuery(''); setCategory('All'); setLimit(18); }}>Clear filters <X size={18} /></button></div>}
-        {!archive && busy ? <div className="live-grid" aria-label="Loading collections" aria-busy="true">{[1, 2, 3, 4, 5, 6].map(i => <div className="live-skeleton" key={i} />)}</div> : <div className="live-grid">{filtered.slice(0, limit).map((album, index) => <article key={album.id} className="live-card" data-reveal-delay={Math.min(index % 4, 3) * 45}><a href={`?collection=${album.id}`} onClick={event => openCollection(event, album.id)} aria-label={`View ${album.name}`}><div className="live-card-image"><Cover album={album} eager={index < 4} /><span className="live-card-arrow"><ArrowUpRight size={17} /></span></div><h3>{album.name}</h3><div className="live-card-meta"><span>{album.category}</span><span>{album.photoCount} photographs</span><span>{album.dateLabel || 'From the archive'}</span></div></a></article>)}</div>}
+        {!archive && busy ? <div className="live-grid" aria-label="Loading collections" aria-busy="true">{[1, 2, 3, 4, 5, 6].map(i => <div className="live-skeleton" key={i} />)}</div> : <div className="live-grid">{filtered.slice(0, limit).map((album, index) => <article key={album.id} className="live-card" data-reveal-delay={Math.min(index % 4, 3) * 45}><a href={`?collection=${album.id}`} onClick={event => openCollection(event, album.id)} aria-label={`View ${album.name}`}><div className="live-card-image"><Cover album={album} /><span className="live-card-arrow"><ArrowUpRight size={17} /></span></div><h3>{album.name}</h3><div className="live-card-meta"><span>{album.category}</span><span>{album.photoCount} photographs</span><span>{album.dateLabel || 'From the archive'}</span></div></a></article>)}</div>}
         {archive && !filtered.length && <div className="live-empty"><h3>{albums.length ? 'No moments found.' : 'Your first collection awaits'}</h3><p>{albums.length ? 'Try a different event, date or sport.' : 'Public albums will appear here when they are added to Zonerama.'}</p></div>}
         {filtered.length > limit && <div className="live-more"><span>Showing {Math.min(limit, filtered.length)} of {filtered.length} collections</span><button onClick={() => setLimit(value => value + 18)}>More from the archive <ArrowDown size={18} /></button></div>}
         <div className="live-sync" role="status"><div><span>{error ? 'Waiting to reconnect' : archive ? (isStaticSnapshot ? 'Synced from Zonerama' : 'Live from Zonerama') : 'Connecting to Zonerama'}</span>{archive && <span>Updated {new Date(archive.updatedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>}<span className="live-refresh-note">{isStaticSnapshot ? 'Published hourly' : 'Refreshes every 5 minutes'}</span></div><button onClick={load} disabled={busy} aria-label="Refresh collections"><RefreshCw size={18} className={busy ? 'live-spinning' : ''} />{busy ? 'Refreshing' : 'Refresh'}</button></div>

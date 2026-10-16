@@ -32,6 +32,30 @@ test('automatic polling preserves the grid during an outage and recovers', async
   await expect(page.locator('.live-card h3')).toHaveText('Updated event');
   await expect(page.getByRole('alert')).toHaveCount(0);
 });
+test('cached collections render immediately while the archive refreshes', async ({ page }) => {
+  await page.addInitScript(data => sessionStorage.setItem('302edits.archive.v1', JSON.stringify(data)), archive([album('cached', 'Cached event')]));
+  let releaseRequest;
+  await page.route('**/api/zonerama', route => new Promise(resolve => {
+    releaseRequest = async () => { await route.fulfill({ json: archive([album('fresh', 'Fresh event')]) }); resolve(); };
+  }));
+  await page.goto('/');
+  await expect(page.locator('.live-card h3')).toHaveText('Cached event');
+  await expect(page.locator('.live-collections')).toHaveAttribute('aria-busy', 'true');
+  await expect.poll(() => Boolean(releaseRequest)).toBe(true);
+  await releaseRequest();
+  await expect(page.locator('.live-card h3')).toHaveText('Fresh event');
+  await expect(page.locator('.live-collections')).toHaveAttribute('aria-busy', 'false');
+});
+test('archive anchors settle below the sticky header after content loads', async ({ page }) => {
+  await page.route('**/api/zonerama', route => route.fulfill({ json: archive(Array.from({ length: 18 }, (_, i) => album(String(i)))) }));
+  await page.goto('/#collections');
+  await expect(page.locator('.live-card')).toHaveCount(18);
+  await expect.poll(() => page.evaluate(() => {
+    const header = document.querySelector('.live-header').getBoundingClientRect();
+    const heading = document.querySelector('#collections-title').getBoundingClientRect();
+    return heading.top > header.bottom && heading.top < innerHeight * 0.55;
+  })).toBe(true);
+});
 test('initial feed failure offers source access and retry; empty results are usable', async ({ page }) => {
   await page.route('**/api/zonerama', route => route.fulfill({ status: 502, json: {} }));
   await page.goto('/');
@@ -170,7 +194,11 @@ test('scroll reveals settle and respond to reduced-motion changes', async ({ pag
   await page.goto('/');
   const motionImage = page.locator('.live-motion-image').first();
   await expect(motionImage).toBeAttached();
-  await expect.poll(() => motionImage.evaluate(element => { const style = getComputedStyle(element); return style.opacity !== '1' || style.transform !== 'none'; })).toBe(true);
+  const coarsePointer = await page.evaluate(() => matchMedia('(pointer: coarse)').matches);
+  if (coarsePointer) {
+    await expect(motionImage).toHaveCSS('opacity', '1');
+    await expect(motionImage).toHaveCSS('transform', 'none');
+  } else await expect.poll(() => motionImage.evaluate(element => { const style = getComputedStyle(element); return style.opacity !== '1' || style.transform !== 'none'; })).toBe(true);
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await expect.poll(() => page.evaluate(() => document.getAnimations().length)).toBe(0);
   await expect(motionImage).toHaveCSS('opacity', '1');
