@@ -9,7 +9,7 @@ test('public album parser decodes titles, validates images and ignores advertise
   assert.equal(album.photoCount, 117);
   assert.equal(album.category, 'Soccer');
   assert.equal(album.date, '2026-09-14');
-  assert.match(album.cover, /width=1000&height=760/);
+  assert.equal(album.cover, 'https://eu.zonerama.com/Social/AlbumCover/123?width=1000&height=760');
   assert.equal(parseAlbum('<li data-banner="album">ad</li>'), null);
   assert.throws(() => parseAlbum(tile('123').replace('https://eu.zonerama.com', 'https://evil.test')));
 });
@@ -47,8 +47,9 @@ test('photo feed keeps proportions, skips ads and rejects untrusted image hosts'
   const { parsePhoto, fetchAlbum } = await adapter;
   assert.equal(parsePhoto({ image: 'advert' }), null);
   const photo = parsePhoto(photoItem(42));
-  assert.match(photo.thumbnailUrl, /42_600x900_18/);
-  assert.match(photo.previewUrl, /42_1200x1800_18/);
+  assert.equal(photo.thumbnailUrl, 'https://eu.zonerama.com/Social/Photo/42?width=600&height=900');
+  assert.equal(photo.previewUrl, 'https://eu.zonerama.com/Social/Photo/42?width=1200&height=1800');
+  assert.doesNotMatch(photo.thumbnailUrl, /signature=/);
   assert.throws(() => parsePhoto({ ...photoItem(42), image: 'https://evil.test/file' }));
   const offsets = [];
   const result = await fetchAlbum({ id: '1', url: 'https://eu.zonerama.com/302Edits/Album/1' }, async (url, options) => {
@@ -57,6 +58,13 @@ test('photo feed keeps proportions, skips ads and rejects untrusted image hosts'
     return Response.json(offsets.length === 1 ? { items: [{ banner: true }, photoItem(42)], isEnd: false } : { items: [photoItem(43)], isEnd: true });
   });
   assert.deepEqual(offsets, ['0', '2']); assert.equal(result.photos.length, 2); assert.equal(result.downloadable, true);
+});
+test('deployment verifier rejects signed cache images before publication', async () => {
+  const { validateCoverUrl, validatePhotoUrl } = await import('../../scripts/verify-zonerama-snapshot.mjs');
+  assert.doesNotThrow(() => validateCoverUrl('https://eu.zonerama.com/Social/AlbumCover/1?width=1000&height=760', '1'));
+  assert.doesNotThrow(() => validatePhotoUrl('https://eu.zonerama.com/Social/Photo/42?width=600&height=900', '42', 'thumbnail'));
+  assert.throws(() => validatePhotoUrl('https://cache-ny.zonerama.com/photos/public/42_800x800_2.jpg?signature=abc', '42', 'thumbnail'), /must use https:\/\/eu\.zonerama\.com/);
+  assert.throws(() => validatePhotoUrl('https://eu.zonerama.com/Social/Photo/99?width=600&height=900', '42', 'thumbnail'), /must use \/Social\/Photo\/42/);
 });
 test('stale album data is cached during an upstream outage and refreshes after the interval', async () => {
   const { createZoneramaHandler, REFRESH_MS } = await adapter;

@@ -11,9 +11,14 @@ export function parseAlbum(html) {
   if (!id) return null; // Zonerama inserts advertising tiles between albums.
   const name = decode(html.match(/class="thumbnail"\s+title="([^"]*)"/)?.[1] || '').trim();
   const pattern = decode(html.match(/data-pattern="([^"]*)"/)?.[1] || '');
-  const cover = new URL(pattern.replaceAll('{width}', '1000').replaceAll('{height}', '760'), PROFILE_URL);
-  if (cover.protocol !== 'https:' || !cover.hostname.endsWith('.zonerama.com') || !name) throw new Error('Unexpected album markup');
-  cover.searchParams.set('topStrip', 'False');
+  const sourceCover = new URL(pattern.replaceAll('{width}', '1000').replaceAll('{height}', '760'), PROFILE_URL);
+  if (sourceCover.protocol !== 'https:' || !sourceCover.hostname.endsWith('.zonerama.com') || !name) throw new Error('Unexpected album markup');
+  // Signed cache URLs redirect cross-site visitors to Zonerama's bot placeholder.
+  // The public social image endpoints are intended for embedding and do not
+  // depend on Zonerama's first-party session cookies.
+  const cover = new URL(`/Social/AlbumCover/${id}`, PROFILE_URL);
+  cover.searchParams.set('width', '1000');
+  cover.searchParams.set('height', '760');
   const dateLabel = decode(html.match(/<p>\s*([^<|]+)\|/)?.[1] || '').trim();
   const date = Date.parse(dateLabel);
   const photoCount = Number(html.match(/<span>(\d+)<\/span>\s*<i class="za-icon icon-images"/)?.[1] || 0);
@@ -57,7 +62,10 @@ export function parsePhoto(item) {
   if (image.protocol !== 'https:' || !image.hostname.endsWith('.zonerama.com') || image.username || image.password) throw new Error('Unexpected photo image');
   const sized = size => {
     const ratio = Math.min(1, size / Math.max(item.width, item.height));
-    return item.image.replaceAll('{width}', String(Math.round(item.width * ratio))).replaceAll('{height}', String(Math.round(item.height * ratio)));
+    const url = new URL(`/Social/Photo/${item.photoId}`, PROFILE_URL);
+    url.searchParams.set('width', String(Math.round(item.width * ratio)));
+    url.searchParams.set('height', String(Math.round(item.height * ratio)));
+    return url.href;
   };
   return { id: String(item.photoId), width: item.width, height: item.height, thumbnailUrl: sized(900), previewUrl: sized(2400) };
 }

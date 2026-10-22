@@ -19,6 +19,7 @@
     "export": "node backend/publish.js",
     "preview": "node scripts/preview.mjs",
     "snapshot:zonerama": "node scripts/snapshot-zonerama.mjs",
+    "verify:zonerama": "node scripts/verify-zonerama-snapshot.mjs",
     "test:browser": "playwright test",
     "benchmark": "node scripts/benchmark.mjs",
     "deploy": "npx wrangler pages deploy site-output",

@@ -44,6 +44,9 @@ next hourly run, or immediately when the publish workflow is run manually.
 The adapter paginates Zonerama's public collection feed, excludes advertising,
 and caches successful results for five minutes when run locally. Search,
 sport filters, source ordering, oldest-first and alphabetical sorting work locally.
+Before a public deployment, the pipeline validates every generated image URL and
+loads a representative image from each album. A signed cache URL, malformed image,
+or Zonerama "Bot Detected" placeholder fails the build instead of reaching visitors.
 Album cards open shareable `?collection=...` pages inside the site. Justified rows
 preserve each photograph’s aspect ratio, with comfortable/compact layouts and
 progressive loading as visitors scroll. Click a photograph for the expanded viewer;
