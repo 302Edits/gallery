@@ -28,7 +28,7 @@ jobs:
       - run: npm ci
       # npm/cli#4828 can omit a platform-specific optional dependency when the
       # lockfile was created on macOS. Pin the binding used by Vite on this runner.
-      - run: npm install --no-save --ignore-scripts @rolldown/binding-linux-x64-gnu@1.2.6 lightningcss-linux-x64-gnu@1.32.0 @tailwindcss/oxide-linux-x64-gnu@4.3.3 --workspace frontend
+      - run: npm install --no-save --ignore-scripts @rolldown/binding-linux-x64-gnu@1.2.6 @oxlint/binding-linux-x64-gnu@1.81.0 lightningcss-linux-x64-gnu@1.32.0 @tailwindcss/oxide-linux-x64-gnu@4.3.3 --workspace frontend
       - name: Test backend and gallery adapter
         run: npm test
       - name: Lint frontend
