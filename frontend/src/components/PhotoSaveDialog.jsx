@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { Download, X } from 'lucide-react';
 import { useDialogLifecycle } from './Lightbox';
-import { originalDownloadUrl, zoneramaUrl } from '../utils/zonerama-url';
+import { originalDownloadUrl, sourcePhotoUrl, zoneramaUrl } from '../utils/zonerama-url';
 
 export default function PhotoSaveDialog({ photo, albumId, onClose }) {
   const dialog = useRef(null);
@@ -28,7 +28,7 @@ export default function PhotoSaveDialog({ photo, albumId, onClose }) {
     <div className="photo-save-preview">
       <h3>Quick save preview</h3>
       <p>Touch and hold the image, then choose Save Image if offered. This saves the preview; use the original above for full quality.</p>
-      {failed ? <p role="status">Preview unavailable. You can still try the original download.</p> : <img src={photo.previewUrl} alt="Photo preview to save" onError={() => setFailed(true)} />}
+      {failed ? <p role="status">Preview unavailable. <a href={sourcePhotoUrl(albumId, photo.id)} target="_blank" rel="noopener noreferrer">View photo on Zonerama</a></p> : <img src={photo.previewUrl} alt="Photo preview to save" onError={() => setFailed(true)} />}
     </div>
   </dialog>;
 }

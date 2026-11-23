@@ -2,16 +2,19 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, ArrowUp, Check, ChevronLeft, ChevronRight, Download, Grid2X2, Maximize, Minimize, RefreshCw, Share2, X, ZoomIn, ZoomOut } from 'lucide-react';
 import { useDialogLifecycle } from './Lightbox';
 import { photoRows } from '../utils/photo-layout';
-import { originalDownloadUrl, zoneramaUrl } from '../utils/zonerama-url';
+import { originalDownloadUrl, sourcePhotoUrl, zoneramaUrl } from '../utils/zonerama-url';
 import './live-album.css';
 import PhotoSaveDialog from './PhotoSaveDialog';
 
-function Photograph({ photo, name, preview = false, eager = false }) {
+function Photograph({ photo, name, albumId, preview = false, eager = false }) {
   const [failed, setFailed] = useState('');
   const url = preview ? photo.previewUrl : photo.thumbnailUrl;
-  return failed === url ? <span className="collection-image-error">This photograph couldn’t load.{preview ? <button onClick={() => setFailed('')}>Retry image</button> : <span>Open to try the larger preview</span>}</span> : <img src={url} alt={name} width={photo.width} height={photo.height} loading={preview || eager ? 'eager' : 'lazy'} decoding="async" onError={() => setFailed(url)} />;
+  if (failed === url) return <span className="collection-image-error">This photograph couldn’t load.{preview
+    ? <><button onClick={() => setFailed('')}>Retry image</button><a href={sourcePhotoUrl(albumId, photo.id)} target="_blank" rel="noopener noreferrer">View photo on Zonerama</a></>
+    : <span>Open to try the larger preview</span>}</span>;
+  return <img src={url} alt={name} width={photo.width} height={photo.height} loading={preview || eager ? 'eager' : 'lazy'} decoding="async" onError={() => setFailed(url)} />;
 }
-function Viewer({ photos, photoId, onChange, onClose, onDownload, downloadable, saving, downloadError, albumName }) {
+function Viewer({ albumId, photos, photoId, onChange, onClose, onDownload, downloadable, saving, downloadError, albumName }) {
   const dialog = useRef(null), touch = useRef(null), stage = useRef(null);
   const [zoomed, setZoomed] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
@@ -39,7 +42,7 @@ function Viewer({ photos, photoId, onChange, onClose, onDownload, downloadable, 
       const dx = event.changedTouches[0].clientX - touch.current.x, dy = event.changedTouches[0].clientY - touch.current.y;
       touch.current = null;
       if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) move(dx < 0 ? 1 : -1);
-    }}><Photograph key={photo.id} photo={photo} name={`${albumName}, photograph ${index + 1}`} preview /></div>
+    }}><Photograph albumId={albumId} key={photo.id} photo={photo} name={`${albumName}, photograph ${index + 1}`} preview /></div>
     <footer className="collection-viewer-footer"><div className="collection-viewer-navigation"><button aria-label="Previous photograph" onClick={() => move(-1)} disabled={photos.length < 2}><ChevronLeft size={22} /></button><span className="collection-viewer-count" aria-live="polite" aria-atomic="true">Photo {index + 1} of {photos.length}</span><button aria-label="Next photograph" onClick={() => move(1)} disabled={photos.length < 2}><ChevronRight size={22} /></button></div>
       <div className="collection-viewer-actions"><button aria-label={zoomed ? 'Zoom out' : 'Zoom in'} aria-pressed={zoomed} onClick={() => setZoomed(value => !value)}>{zoomed ? <ZoomOut size={19} /> : <ZoomIn size={19} />}</button>{document.fullscreenEnabled && <button aria-label={fullscreen ? 'Exit full screen' : 'Enter full screen'} onClick={toggleFullscreen}>{fullscreen ? <Minimize size={19} /> : <Maximize size={19} />}</button>}<button className="collection-save" disabled={!downloadable || saving} onClick={() => onDownload(photo)}><Download size={18} /><span>{saving ? 'Preparing…' : downloadable ? 'Download' : 'Downloads disabled'}</span></button></div>
     </footer>
@@ -141,7 +144,7 @@ export default function LiveAlbum({ id, onBack }) {
       <div ref={sentinel} className="collection-end live-width">{limit < album.photos.length ? <><p>{Math.min(limit, album.photos.length)} of {album.photos.length} photographs</p><button onClick={() => setLimit(value => value + 24)}>Continue exploring <ArrowRight size={16} /></button></> : <><Check size={20} /><p>All {album.photos.length} photographs</p><button onClick={() => window.scrollTo({ top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' })}>Back to top <ArrowUp size={16} /></button></>}</div>
     </>}
     <div className="collection-bottom live-width"><button onClick={onBack}><ArrowLeft size={17} />All collections</button><p>Updated from Zonerama</p></div>
-    {viewerId && album?.photos.some(photo => photo.id === viewerId) && <Viewer photos={album.photos} photoId={viewerId} onChange={setViewerId} onClose={() => setViewerId(null)} onDownload={download} downloadable={album.downloadable} saving={saving} downloadError={downloadError} albumName={album.name} />}
+    {viewerId && album?.photos.some(photo => photo.id === viewerId) && <Viewer albumId={id} photos={album.photos} photoId={viewerId} onChange={setViewerId} onClose={() => setViewerId(null)} onDownload={download} downloadable={album.downloadable} saving={saving} downloadError={downloadError} albumName={album.name} />}
     {savePhoto && album?.downloadable && <PhotoSaveDialog photo={savePhoto} albumId={id} onClose={() => setSavePhoto(null)} />}
   </main>;
 }

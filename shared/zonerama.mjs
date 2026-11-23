@@ -16,7 +16,7 @@ export function parseAlbum(html) {
   // Signed cache URLs redirect cross-site visitors to Zonerama's bot placeholder.
   // The public social image endpoints are intended for embedding and do not
   // depend on Zonerama's first-party session cookies.
-  const cover = new URL(`/Social/AlbumCover/${id}`, PROFILE_URL);
+  const cover = new URL(`/social/img/album-cover/${id}`, PROFILE_URL);
   cover.searchParams.set('width', '1000');
   cover.searchParams.set('height', '760');
   const dateLabel = decode(html.match(/<p>\s*([^<|]+)\|/)?.[1] || '').trim();
@@ -62,7 +62,7 @@ export function parsePhoto(item) {
   if (image.protocol !== 'https:' || !image.hostname.endsWith('.zonerama.com') || image.username || image.password) throw new Error('Unexpected photo image');
   const sized = size => {
     const ratio = Math.min(1, size / Math.max(item.width, item.height));
-    const url = new URL(`/Social/Photo/${item.photoId}`, PROFILE_URL);
+    const url = new URL(`/social/img/photo/${item.photoId}`, PROFILE_URL);
     url.searchParams.set('width', String(Math.round(item.width * ratio)));
     url.searchParams.set('height', String(Math.round(item.height * ratio)));
     return url.href;
@@ -85,7 +85,7 @@ export async function fetchAlbum(album, fetcher = fetch) {
     const data = await response.json();
     if (!Array.isArray(data.items) || typeof data.isEnd !== 'boolean') throw new Error('Unexpected album response');
     for (const item of data.items) { const photo = parsePhoto(item); if (photo) photos.set(photo.id, photo); }
-    if (data.isEnd) return { ...album, photos: [...photos.values()], downloadable, updatedAt: new Date().toISOString(), stale: false };
+    if (data.isEnd) return { ...album, photoCount: photos.size, photos: [...photos.values()], downloadable, updatedAt: new Date().toISOString(), stale: false };
     if (!data.items.length) throw new Error('Incomplete album response');
     offset += data.items.length;
   }

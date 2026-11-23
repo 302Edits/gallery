@@ -38,6 +38,14 @@ test('expanded viewer navigates, zooms, downloads and restores focus',async({pag
   const pending=page.waitForEvent('download');await dialog.getByRole('button',{name:'Download',exact:true}).click();const download=await pending;expect(download.suggestedFilename()).toBe('original.jpg');
   await page.keyboard.press('Escape');await expect(dialog).toHaveCount(0);await expect(opener).toBeFocused();
 });
+test('an unavailable preview links to the same photograph on Zonerama', async ({ page }) => {
+  await mock(page);
+  await page.route('**/favicon.png', route => route.fulfill({ status: 404 }));
+  await page.goto('/?collection=123&photo=100');
+  const link = page.getByRole('dialog').getByRole('link', { name: 'View photo on Zonerama' });
+  await expect(link).toBeVisible();
+  await expect(link).toHaveAttribute('href', 'https://eu.zonerama.com/302Edits/Photo/123/100');
+});
 test('download restrictions and transient download failures stay inside the gallery',async({page})=>{
   await mock(page,false);await page.goto('/?collection=123');await page.getByRole('button',{name:'Maximize photograph 1',exact:true}).click();
   await expect(page.getByRole('button',{name:'Downloads disabled',exact:true})).toBeDisabled();

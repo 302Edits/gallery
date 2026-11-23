@@ -3,17 +3,18 @@ name: Publish gallery
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   schedule:
     - cron: '17 * * * *'
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
+  pages: read
 
 concurrency:
-  group: pages
+  group: pages-${{ github.event.pull_request.number || 'publish' }}
   cancel-in-progress: true
 
 jobs:
@@ -43,11 +44,22 @@ jobs:
           VITE_STATIC_ZONERAMA: 'true'
           VITE_BASE_PATH: /${{ github.event.repository.name }}/
         run: npm run build
+      - name: Check the photo viewer fallback
+        if: github.event_name == 'pull_request'
+        run: |
+          npx playwright install --with-deps chromium
+          npm run test:browser -- --grep "unavailable preview links"
       - uses: actions/configure-pages@v5
+        if: github.event_name != 'pull_request'
       - uses: actions/upload-pages-artifact@v3
+        if: github.event_name != 'pull_request'
         with:
           path: frontend/dist-public
   deploy:
+    if: github.event_name != 'pull_request'
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

@@ -45,7 +45,7 @@ The adapter paginates Zonerama's public collection feed, excludes advertising,
 and caches successful results for five minutes when run locally. Search,
 sport filters, source ordering, oldest-first and alphabetical sorting work locally.
 Before a public deployment, the pipeline validates every generated image URL and
-loads a representative image from each album. A signed cache URL, malformed image,
+loads the cover and both image sizes for one photograph from each nonempty album. Published counts come from the distinct photos in each album manifest. Discrepancies with the upstream listing appear in the refresh log. A signed cache URL, malformed image,
 or Zonerama "Bot Detected" placeholder fails the build instead of reaching visitors.
 Album cards open shareable `?collection=...` pages inside the site. Justified rows
 preserve each photograph’s aspect ratio, with comfortable/compact layouts and
@@ -70,7 +70,7 @@ TIFF originals can be downloaded; their WebP previews work in browsers.
 
 ## GitHub Pages hosting
 
-The repository includes `.github/workflows/pages.yml`. Every push to `master`
+The repository includes `.github/workflows/pages.yml`. Every push to `main`
 and an hourly schedule fetches the public Zonerama archive, builds the site for
 the repository's Pages subpath and deploys it with GitHub's official Pages
 actions. The generated snapshot is a deployment artifact and is intentionally

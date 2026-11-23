@@ -7,7 +7,7 @@ import sharp from 'sharp';
 const ZONERAMA_ORIGIN = 'https://eu.zonerama.com';
 const BOT_PLACEHOLDER_SHA256 = '2e0f3e25b34514b1a639c1c079c5b405304f20806feb779f12255d6e2bcf1d0b';
 const snapshotRoot = path.resolve(process.env.ZONERAMA_SNAPSHOT_ROOT || 'frontend/public/api/zonerama');
-const concurrency = Math.max(1, Math.min(12, Number(process.env.ZONERAMA_VERIFY_CONCURRENCY || 6)));
+const concurrency = Math.max(1, Math.min(12, Number.parseInt(process.env.ZONERAMA_VERIFY_CONCURRENCY, 10) || 6));
 const referrer = process.env.ZONERAMA_VERIFY_REFERRER || 'https://302edits.github.io/gallery/';
 
 function assertion(condition, message) {
@@ -28,11 +28,11 @@ function parsePublicImageUrl(value, expectedPath, label) {
 }
 
 export function validateCoverUrl(value, albumId) {
-  return parsePublicImageUrl(value, `/Social/AlbumCover/${albumId}`, `Album ${albumId} cover`);
+  return parsePublicImageUrl(value, `/social/img/album-cover/${albumId}`, `Album ${albumId} cover`);
 }
 
 export function validatePhotoUrl(value, photoId, variant) {
-  return parsePublicImageUrl(value, `/Social/Photo/${photoId}`, `Photo ${photoId} ${variant}`);
+  return parsePublicImageUrl(value, `/social/img/photo/${photoId}`, `Photo ${photoId} ${variant}`);
 }
 
 async function readJson(file) {
@@ -43,30 +43,33 @@ async function readJson(file) {
   }
 }
 
-async function inspectImage(check) {
-  const response = await fetch(check.url, {
+async function inspectImage({ url, photo }, fetcher) {
+  const response = await fetcher(url, {
     headers: { Accept: 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8', Referer: referrer },
     redirect: 'follow',
     signal: AbortSignal.timeout(20000),
   });
-  assertion(response.ok, `Photo ${check.photo.id} returned HTTP ${response.status}`);
-  assertion((response.headers.get('Content-Type') || '').startsWith('image/'), `Photo ${check.photo.id} did not return an image`);
+  assertion(response.ok, `Image returned HTTP ${response.status}`);
+  assertion((response.headers.get('Content-Type') || '').startsWith('image/'), `Image did not return an image`);
   const bytes = Buffer.from(await response.arrayBuffer());
-  assertion(bytes.length > 1024 && bytes.length <= 10 * 1024 * 1024, `Photo ${check.photo.id} returned an invalid image size`);
+  assertion(bytes.length > 1024 && bytes.length <= 10 * 1024 * 1024, `Image returned an invalid image size`);
   const hash = crypto.createHash('sha256').update(bytes).digest('hex');
-  assertion(hash !== BOT_PLACEHOLDER_SHA256, `Photo ${check.photo.id} returned Zonerama's Bot Detected placeholder`);
+  assertion(hash !== BOT_PLACEHOLDER_SHA256, `Image returned Zonerama's Bot Detected placeholder`);
   const metadata = await sharp(bytes).metadata();
-  assertion(metadata.width && metadata.height, `Photo ${check.photo.id} could not be decoded`);
-  const expectedRatio = check.photo.width / check.photo.height;
-  const actualRatio = metadata.width / metadata.height;
-  assertion(Math.abs(actualRatio / expectedRatio - 1) <= 0.02, `Photo ${check.photo.id} returned unexpected ${metadata.width}x${metadata.height} dimensions`);
-  assertion(metadata.width <= check.requestedWidth + 1 && metadata.height <= check.requestedHeight + 1,
-    `Photo ${check.photo.id} exceeded its requested dimensions`);
+  assertion(metadata.width && metadata.height, `Image could not be decoded`);
+  if (photo) {
+    const expectedRatio = photo.width / photo.height;
+    const actualRatio = metadata.width / metadata.height;
+    assertion(Math.abs(actualRatio / expectedRatio - 1) <= 0.02, `Image returned unexpected ${metadata.width}x${metadata.height} dimensions`);
+  }
+  assertion(metadata.width <= Number(url.searchParams.get('width')) + 1 && metadata.height <= Number(url.searchParams.get('height')) + 1,
+    `Image exceeded its requested dimensions`);
+  await sharp(bytes).resize(1, 1).raw().toBuffer();
   return hash;
 }
 
-export async function verifySnapshot() {
-  const archive = await readJson(path.join(snapshotRoot, 'index.json'));
+export async function verifySnapshot(root = snapshotRoot, fetcher = fetch) {
+  const archive = await readJson(path.join(root, 'index.json'));
   assertion(Array.isArray(archive.albums) && archive.albums.length > 0, 'The Zonerama snapshot contains no albums');
   const albumIds = new Set();
   const checks = [];
@@ -76,11 +79,13 @@ export async function verifySnapshot() {
     const albumId = String(summary.id || '');
     assertion(/^\d+$/.test(albumId) && !albumIds.has(albumId), `Invalid or duplicate album id ${albumId || '(empty)'}`);
     albumIds.add(albumId);
-    validateCoverUrl(summary.cover, albumId);
-    const album = await readJson(path.join(snapshotRoot, 'albums', `${albumId}.json`));
+    const cover = validateCoverUrl(summary.cover, albumId);
+    const album = await readJson(path.join(root, 'albums', `${albumId}.json`));
     assertion(String(album.id) === albumId, `Album ${albumId} manifest id does not match its filename`);
     assertion(album.cover === summary.cover, `Album ${albumId} cover differs between archive and album manifests`);
     assertion(Array.isArray(album.photos), `Album ${albumId} has no photo list`);
+    assertion(summary.photoCount === album.photos.length && album.photoCount === album.photos.length,
+      `Album ${albumId} count differs from its ${album.photos.length} published photographs`);
     const photoIds = new Set();
 
     for (const photo of album.photos) {
@@ -96,11 +101,10 @@ export async function verifySnapshot() {
     photoCount += album.photos.length;
     const sample = album.photos.find(photo => Math.abs(photo.width / photo.height - 1) > 0.05) || album.photos[0];
     if (sample) {
-      const url = validatePhotoUrl(sample.thumbnailUrl, sample.id, 'thumbnail');
-      checks.push({ albumId, photo: sample, url, requestedWidth: Number(url.searchParams.get('width')),
-        requestedHeight: Number(url.searchParams.get('height')) });
-    } else {
-      assertion(Number(summary.photoCount || 0) === 0, `Album ${albumId} unexpectedly has no photographs`);
+      checks.push({ albumId, variant: 'cover', url: cover });
+      for (const variant of ['thumbnail', 'preview']) {
+        checks.push({ albumId, variant, photo: sample, url: new URL(sample[`${variant}Url`]) });
+      }
     }
   }
 
@@ -110,9 +114,10 @@ export async function verifySnapshot() {
     while (cursor < checks.length) {
       const check = checks[cursor++];
       try {
-        hashes.push(await inspectImage(check));
+        const hash = await inspectImage(check, fetcher);
+        if (check.variant === 'thumbnail') hashes.push(hash);
       } catch (error) {
-        throw new Error(`Album ${check.albumId} image verification failed: ${error.message}`);
+        throw new Error(`Album ${check.albumId} ${check.variant} ${check.photo?.id || ''} verification failed: ${error.message}`);
       }
     }
   }

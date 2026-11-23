@@ -12,6 +12,10 @@ export function siteHome() {
   return base;
 }
 
+export function sourcePhotoUrl(albumId, photoId) {
+  return `https://eu.zonerama.com/302Edits/Photo/${encodeURIComponent(albumId)}/${encodeURIComponent(photoId)}`;
+}
+
 export function originalDownloadUrl(photoId) {
   return staticSnapshot ? `https://eu.zonerama.com/Download/Photo/?id=${photoId}&original=true` : '';
 }
